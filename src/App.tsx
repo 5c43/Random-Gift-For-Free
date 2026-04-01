@@ -33,8 +33,8 @@ function ProfileCheck({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
-import { CustomCursor } from './components/CustomCursor';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { CustomCursor } from './pages/components/CustomCursor';
+import { ErrorBoundary } from './pages/components/ErrorBoundary';
 
 function Navbar() {
   const { user, userData, logout } = useAuth();

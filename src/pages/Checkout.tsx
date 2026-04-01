@@ -5,7 +5,7 @@ import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, ChevronRight, CheckCircle2, Clock, AlertCircle, CreditCard, ArrowLeft, MessageSquare, Loader2 } from 'lucide-react';
+import { ShieldCheck, ChevronRight, CheckCircle2, Clock, AlertCircle, CreditCard, ArrowLeft, MessageSquare, Loader2, Zap } from 'lucide-react';
 
 export function Checkout() {
   const { id } = useParams<{ id: string }>();

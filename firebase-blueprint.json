@@ -1,0 +1,193 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the marketplace.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "username": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "bio": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "isVerifiedSeller": { "type": "boolean" },
+        "balance": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "username", "role", "isVerifiedSeller", "createdAt"]
+    },
+    "Listing": {
+      "title": "Listing",
+      "description": "An account or item for sale.",
+      "type": "object",
+      "properties": {
+        "sellerId": { "type": "string" },
+        "sellerName": { "type": "string" },
+        "sellerUsername": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "game": { "type": "string" },
+        "device": { "type": "string" },
+        "deliveryTime": { "type": "string" },
+        "level": { "type": "string" },
+        "rank": { "type": "string" },
+        "region": { "type": "string" },
+        "skins": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["active", "sold", "pending"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sellerId", "sellerName", "title", "description", "price", "game", "device", "deliveryTime", "status", "createdAt"]
+    },
+    "Purchase": {
+      "title": "Purchase",
+      "description": "A completed or pending purchase.",
+      "type": "object",
+      "properties": {
+        "listingId": { "type": "string" },
+        "buyerId": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "price": { "type": "number" },
+        "receiptEmail": { "type": "string" },
+        "status": { "type": "string", "enum": ["awaiting_payment", "Pending Delivery", "completed", "refunded"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["listingId", "buyerId", "sellerId", "price", "receiptEmail", "status", "createdAt"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "A conversation between buyer and seller.",
+      "type": "object",
+      "properties": {
+        "listingId": { "type": "string" },
+        "buyerId": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "lastMessage": { "type": "string" },
+        "lastMessageAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["listingId", "buyerId", "sellerId", "createdAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A single message in a chat.",
+      "type": "object",
+      "properties": {
+        "chatId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["chatId", "senderId", "text", "createdAt"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "A review for a seller.",
+      "type": "object",
+      "properties": {
+        "sellerId": { "type": "string" },
+        "buyerId": { "type": "string" },
+        "buyerName": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sellerId", "buyerId", "buyerName", "rating", "comment", "createdAt"]
+    },
+    "SellerApplication": {
+      "title": "SellerApplication",
+      "description": "An application to become a verified seller.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "username": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "bio": { "type": "string" },
+        "platformLink": { "type": "string" },
+        "reviewCount": { "type": "number" },
+        "telegram": { "type": "string" },
+        "discord": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "rejectionReason": { "type": "string" },
+        "processedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "username", "bio", "platformLink", "reviewCount", "status", "createdAt"]
+    },
+    "Withdrawal": {
+      "title": "Withdrawal",
+      "description": "A request to withdraw funds.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "amount": { "type": "number" },
+        "walletAddress": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "completed"] },
+        "rejectionReason": { "type": "string" },
+        "processedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "amount", "walletAddress", "status", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A notification for a user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["sale", "purchase", "message", "system"] },
+        "link": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "title", "message", "type", "read", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles and settings."
+    },
+    "/listings/{listingId}": {
+      "schema": { "$ref": "#/entities/Listing" },
+      "description": "Items listed for sale."
+    },
+    "/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/Chat" },
+      "description": "Chat sessions."
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Messages within a chat."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Reviews of sellers."
+    },
+    "/purchases/{purchaseId}": {
+      "schema": { "$ref": "#/entities/Purchase" },
+      "description": "Purchase records and escrow status."
+    },
+    "/usernames/{username}": {
+      "schema": { "type": "object", "properties": { "uid": { "type": "string" } } },
+      "description": "Unique username registry."
+    },
+    "/seller_applications/{applicationId}": {
+      "schema": { "$ref": "#/entities/SellerApplication" },
+      "description": "Applications for seller verification."
+    },
+    "/withdrawals/{withdrawalId}": {
+      "schema": { "$ref": "#/entities/Withdrawal" },
+      "description": "Withdrawal requests from sellers."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "User notifications."
+    }
+  }
+}

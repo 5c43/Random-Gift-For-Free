@@ -1,6 +1,9 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -62,14 +65,18 @@ async function startServer() {
   try {
     // Create Vite server in middleware mode
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      root: __dirname,
+      server: { 
+        middlewareMode: true,
+        hmr: true,
+      },
       appType: 'spa',
     });
 
     // Use Vite's connect instance as middleware
     app.use(vite.middlewares);
 
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
   } catch (error) {

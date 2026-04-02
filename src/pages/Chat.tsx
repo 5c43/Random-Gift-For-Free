@@ -247,15 +247,23 @@ export function Chat() {
               {/* Chat Header */}
               <div className="p-5 border-b border-white/10 bg-white/5 flex items-center justify-between backdrop-blur-md">
                 <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center overflow-hidden border border-white/20 shadow-lg">
+                  <Link 
+                    to={`/profile/${currentChatDetails?.buyerId === user.uid ? currentChatDetails?.sellerId : currentChatDetails?.buyerId}`}
+                    className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center overflow-hidden border border-white/20 shadow-lg hover:border-violet-500/50 transition-all"
+                  >
                     {currentChatDetails?.otherUser?.photoURL ? (
                       <img src={currentChatDetails.otherUser.photoURL} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
                       <User className="h-6 w-6 text-gray-400" />
                     )}
-                  </div>
+                  </Link>
                   <div>
-                    <h3 className="font-bold text-white text-lg">{currentChatDetails?.otherUser?.displayName || 'Loading...'}</h3>
+                    <Link 
+                      to={`/profile/${currentChatDetails?.buyerId === user.uid ? currentChatDetails?.sellerId : currentChatDetails?.buyerId}`}
+                      className="font-bold text-white text-lg hover:text-violet-400 transition-colors"
+                    >
+                      {currentChatDetails?.otherUser?.displayName || 'Loading...'}
+                    </Link>
                     <p className="text-sm font-medium text-violet-400 truncate max-w-[250px]">{currentChatDetails?.listing?.title}</p>
                   </div>
                 </div>

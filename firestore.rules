@@ -127,6 +127,23 @@ service cloud.firestore {
              data.read is bool;
     }
 
+    function isValidTicket(data) {
+      return hasOnlyAllowedFields(['uid', 'username', 'subject', 'category', 'status', 'createdAt', 'lastMessageAt']) &&
+             data.uid is string &&
+             data.username is string &&
+             data.subject is string && data.subject.size() > 0 && data.subject.size() <= 200 &&
+             data.category is string && data.category.size() <= 50 &&
+             data.status in ['open', 'closed'];
+    }
+
+    function isValidTicketMessage(data) {
+      return hasOnlyAllowedFields(['text', 'senderId', 'senderName', 'createdAt', 'isAdmin']) &&
+             data.text is string && data.text.size() > 0 && data.text.size() <= 5000 &&
+             data.senderId is string &&
+             data.senderName is string && data.senderName.size() <= 50 &&
+             data.isAdmin is bool;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -243,6 +260,31 @@ service cloud.firestore {
                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
                     request.resource.data.read == true;
       allow delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
+    }
+
+    match /tickets/{ticketId} {
+      allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidTicket(request.resource.data) &&
+                    request.resource.data.uid == request.auth.uid &&
+                    request.resource.data.status == 'open';
+      allow update: if (isAuthenticated() && isValidTicket(request.resource.data) &&
+                        (resource.data.uid == request.auth.uid || isAdmin()) &&
+                        request.resource.data.uid == resource.data.uid &&
+                        request.resource.data.subject == resource.data.subject &&
+                        request.resource.data.category == resource.data.category) ||
+                       isAdmin();
+    }
+
+    match /tickets/{ticketId}/messages/{messageId} {
+      allow read: if isAuthenticated() &&
+                  (get(/databases/$(database)/documents/tickets/$(ticketId)).data.uid == request.auth.uid ||
+                   isAdmin());
+      allow create: if isAuthenticated() && isValidTicketMessage(request.resource.data) &&
+                    (request.resource.data.senderId == request.auth.uid || 
+                     (request.resource.data.senderId == 'system' && request.resource.data.isAdmin == true) ||
+                     isAdmin()) &&
+                    (get(/databases/$(database)/documents/tickets/$(ticketId)).data.uid == request.auth.uid ||
+                     isAdmin());
     }
   }
 }

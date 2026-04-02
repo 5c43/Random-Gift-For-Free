@@ -300,7 +300,6 @@ export function Offer() {
 
             <div className="mt-8 pt-8 border-t border-white/10 grid grid-cols-2 gap-4 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
               <div className="flex flex-col gap-1">
-                <span>757 views</span>
                 <span>Mar 31, 2026</span>
               </div>
               <div className="flex flex-col gap-1 text-right">

@@ -15,12 +15,14 @@ import { Checkout } from './pages/Checkout';
 import { UsernameSetup } from './pages/UsernameSetup';
 import { PaymentWaiting } from './pages/PaymentWaiting';
 import { Notifications } from './pages/Notifications';
+import { Support } from './pages/Support';
+import { TermsOfService } from './pages/TermsOfService';
+import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { useLocation, Navigate } from 'react-router-dom';
 import { Bell, Gamepad2, MessageSquare, User, LogOut, Menu, ShieldCheck, LayoutDashboard, PlusCircle, Zap } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 import { motion } from 'motion/react';
-import { CustomCursor } from './pages/components/CustomCursor';
 import { ErrorBoundary } from './pages/components/ErrorBoundary';
 import { handleFirestoreError, OperationType } from './lib/firestore-errors';
 
@@ -110,10 +112,6 @@ function Navbar() {
                   onMouseEnter={handleMouseEnter}
                   onMouseLeave={handleMouseLeave}
                 >
-                  <button className="flex items-center gap-2 focus:outline-none py-2">
-                    <img src={userData?.photoURL || user.photoURL || `https://ui-avatars.com/api/?name=${user.email}`} alt="Avatar" className="h-9 w-9 rounded-full border-2 border-white/20 object-cover" />
-                  </button>
-                  
                   <Link to="/notifications" className="relative p-2 text-gray-300 hover:text-white transition-colors">
                     <Bell className="h-5 w-5" />
                     {unreadCount > 0 && (
@@ -122,6 +120,10 @@ function Navbar() {
                       </span>
                     )}
                   </Link>
+
+                  <button className="flex items-center gap-2 focus:outline-none py-2">
+                    <img src={userData?.photoURL || user.photoURL || `https://ui-avatars.com/api/?name=${user.email}`} alt="Avatar" className="h-9 w-9 rounded-full border-2 border-white/20 object-cover" />
+                  </button>
 
                   {profileMenuOpen && (
                     <div 
@@ -217,7 +219,6 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <Router>
-          <CustomCursor />
           <div className="animated-bg" />
           <div className="min-h-screen text-gray-100 font-sans flex flex-col relative z-10">
             <Navbar />
@@ -239,6 +240,9 @@ export default function App() {
                   <Route path="/setup-username" element={<UsernameSetup />} />
                   <Route path="/payment-waiting/:purchaseId" element={<PaymentWaiting />} />
                   <Route path="/notifications" element={<Notifications />} />
+                  <Route path="/support" element={<Support />} />
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
                 </Routes>
               </ProfileCheck>
             </main>
@@ -294,9 +298,9 @@ export default function App() {
                     &copy; 2026 GameVault. All rights reserved.
                   </p>
                   <div className="flex gap-6 text-sm text-gray-500">
-                    <Link to="/" className="hover:text-white transition-colors">Terms of Service</Link>
-                    <Link to="/" className="hover:text-white transition-colors">Privacy Policy</Link>
-                    <Link to="/" className="hover:text-white transition-colors">Contact</Link>
+                    <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+                    <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+                    <Link to="/support" className="hover:text-white transition-colors">Support</Link>
                   </div>
                 </div>
               </div>

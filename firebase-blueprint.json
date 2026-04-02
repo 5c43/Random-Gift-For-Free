@@ -146,6 +146,34 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "title", "message", "type", "read", "createdAt"]
+    },
+    "Ticket": {
+      "title": "Ticket",
+      "description": "A support ticket.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "username": { "type": "string" },
+        "subject": { "type": "string" },
+        "category": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "closed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastMessageAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "username", "subject", "category", "status", "createdAt", "lastMessageAt"]
+    },
+    "TicketMessage": {
+      "title": "TicketMessage",
+      "description": "A message in a support ticket.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isAdmin": { "type": "boolean" }
+      },
+      "required": ["text", "senderId", "senderName", "createdAt", "isAdmin"]
     }
   },
   "firestore": {
@@ -188,6 +216,14 @@
     "/notifications/{notificationId}": {
       "schema": { "$ref": "#/entities/Notification" },
       "description": "User notifications."
+    },
+    "/tickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/Ticket" },
+      "description": "Support tickets."
+    },
+    "/tickets/{ticketId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/TicketMessage" },
+      "description": "Messages in a support ticket."
     }
   }
 }

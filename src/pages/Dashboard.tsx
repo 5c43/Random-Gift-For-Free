@@ -20,7 +20,9 @@ export function Dashboard() {
   const [saving, setSaving] = useState(false);
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawMethod, setWithdrawMethod] = useState<'crypto' | 'paypal'>('crypto');
   const [walletAddress, setWalletAddress] = useState('');
+  const [paypalEmail, setPaypalEmail] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [profileForm, setProfileForm] = useState({
     displayName: userData?.displayName || '',
@@ -171,8 +173,12 @@ export function Dashboard() {
       showToast('Insufficient balance.', 'error');
       return;
     }
-    if (!walletAddress.trim()) {
+    if (withdrawMethod === 'crypto' && !walletAddress.trim()) {
       showToast('Please enter a wallet address.', 'error');
+      return;
+    }
+    if (withdrawMethod === 'paypal' && !paypalEmail.trim()) {
+      showToast('Please enter your PayPal email.', 'error');
       return;
     }
 
@@ -185,7 +191,9 @@ export function Dashboard() {
       batch.set(withdrawalRef, {
         uid: user.uid,
         amount,
-        walletAddress,
+        method: withdrawMethod,
+        walletAddress: withdrawMethod === 'crypto' ? walletAddress : null,
+        paypalEmail: withdrawMethod === 'paypal' ? paypalEmail : null,
         status: 'pending',
         createdAt: serverTimestamp()
       });
@@ -401,7 +409,10 @@ export function Dashboard() {
                                 {w.createdAt?.toDate().toLocaleDateString()}
                               </td>
                               <td className="px-8 py-4 font-bold">${w.amount.toFixed(2)}</td>
-                              <td className="px-8 py-4 text-sm font-mono text-gray-400 truncate max-w-[200px]">{w.walletAddress}</td>
+                              <td className="px-8 py-4 text-sm font-mono text-gray-400 truncate max-w-[200px]">
+                                {w.method === 'paypal' ? w.paypalEmail : w.walletAddress}
+                                <span className="ml-2 text-[10px] uppercase opacity-50">({w.method || 'crypto'})</span>
+                              </td>
                               <td className="px-8 py-4">
                                 <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase ${
                                   w.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' :
@@ -692,16 +703,58 @@ export function Dashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-400 mb-2 uppercase tracking-widest">Crypto Wallet Address</label>
-                  <input 
-                    type="text" 
-                    value={walletAddress}
-                    onChange={e => setWalletAddress(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-4 text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50"
-                    placeholder="Enter your BTC/ETH/USDT address"
-                  />
-                  <p className="mt-2 text-xs text-gray-500">Please double-check your address. Transfers are irreversible.</p>
+                  <label className="block text-sm font-bold text-gray-400 mb-2 uppercase tracking-widest">Withdrawal Method</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button 
+                      type="button"
+                      onClick={() => setWithdrawMethod('crypto')}
+                      className={`py-3 rounded-xl font-bold border transition-all ${
+                        withdrawMethod === 'crypto' 
+                          ? 'bg-violet-600/10 border-violet-500 text-violet-400' 
+                          : 'bg-black/40 border-white/10 text-gray-500 hover:border-white/20'
+                      }`}
+                    >
+                      Crypto
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setWithdrawMethod('paypal')}
+                      className={`py-3 rounded-xl font-bold border transition-all ${
+                        withdrawMethod === 'paypal' 
+                          ? 'bg-violet-600/10 border-violet-500 text-violet-400' 
+                          : 'bg-black/40 border-white/10 text-gray-500 hover:border-white/20'
+                      }`}
+                    >
+                      PayPal
+                    </button>
+                  </div>
                 </div>
+
+                {withdrawMethod === 'crypto' ? (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-400 mb-2 uppercase tracking-widest">Crypto Wallet Address</label>
+                    <input 
+                      type="text" 
+                      value={walletAddress}
+                      onChange={e => setWalletAddress(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-4 text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                      placeholder="Enter your BTC/ETH/USDT address"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">Please double-check your address. Transfers are irreversible.</p>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-400 mb-2 uppercase tracking-widest">PayPal Email Address</label>
+                    <input 
+                      type="email" 
+                      value={paypalEmail}
+                      onChange={e => setPaypalEmail(e.target.value)}
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-4 text-white font-mono text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                      placeholder="Enter your PayPal email"
+                    />
+                    <p className="mt-2 text-xs text-gray-500">Payments will be sent manually to this address.</p>
+                  </div>
+                )}
 
                 <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4">
                   <p className="text-xs text-violet-300 leading-relaxed">

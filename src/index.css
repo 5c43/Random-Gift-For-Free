@@ -9,7 +9,6 @@
 body {
   background-color: #050505;
   color: #ffffff;
-  cursor: none;
   overflow-x: hidden;
   font-family: var(--font-sans);
 }
@@ -34,34 +33,6 @@ h1, h2, h3, h4, h5, h6, .font-display {
 @keyframes rotateBg {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-}
-
-.custom-cursor-dot {
-  position: fixed;
-  top: 0; left: 0;
-  width: 8px; height: 8px;
-  background: #a78bfa;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9999;
-  transform: translate(-50%, -50%);
-}
-
-.custom-cursor-outline {
-  position: fixed;
-  top: 0; left: 0;
-  width: 40px; height: 40px;
-  border: 1px solid rgba(167, 139, 250, 0.4);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9998;
-  transform: translate(-50%, -50%);
-}
-
-@media (pointer: fine) {
-  a, button, input, select, textarea {
-    cursor: none;
-  }
 }
 
 /* Scrollbar */

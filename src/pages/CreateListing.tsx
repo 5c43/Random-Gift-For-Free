@@ -251,16 +251,35 @@ export function CreateListing() {
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-400 mb-3 uppercase tracking-widest">Price ($)</label>
-                <input 
-                  required 
-                  type="number" 
-                  min="0" 
-                  step="0.01" 
-                  value={formData.price} 
-                  onChange={e => setFormData({...formData, price: e.target.value})} 
-                  className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]/50 transition-all placeholder:text-gray-600 text-2xl font-extrabold text-[#10B981]" 
-                  placeholder="0.00" 
-                />
+                <div className="space-y-4">
+                  <input 
+                    required 
+                    type="number" 
+                    min="0" 
+                    step="0.01" 
+                    value={formData.price} 
+                    onChange={e => setFormData({...formData, price: e.target.value})} 
+                    className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]/50 transition-all placeholder:text-gray-600 text-2xl font-extrabold text-[#10B981]" 
+                    placeholder="0.00" 
+                  />
+                  {formData.price && parseFloat(formData.price) > 0 && (
+                    <div className="bg-black/20 rounded-2xl p-4 border border-white/5 space-y-2">
+                      <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-gray-500">
+                        <span>Listing Price</span>
+                        <span>${parseFloat(formData.price).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-red-400/80">
+                        <span>Website Fee (5%)</span>
+                        <span>-${(parseFloat(formData.price) * 0.05).toFixed(2)}</span>
+                      </div>
+                      <div className="h-px bg-white/5 my-2"></div>
+                      <div className="flex justify-between text-sm font-black uppercase tracking-widest text-emerald-400">
+                        <span>You Receive</span>
+                        <span>${(parseFloat(formData.price) * 0.95).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </motion.div>
 

@@ -275,10 +275,6 @@ export function Marketplace() {
                           Featured
                         </span>
                       )}
-                      <div className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1.5 text-[10px] font-bold border border-white/10">
-                        <Eye className="h-3 w-3 text-gray-400" />
-                        {listing.views || 0}
-                      </div>
                     </div>
                   </div>
 

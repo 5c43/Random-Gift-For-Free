@@ -81,9 +81,9 @@ export function Offer() {
     );
   }
 
-  const images = listing.images && listing.images.filter((img: string) => img && img.trim() !== '').length > 0 
+  const images = (listing?.images && listing.images.filter((img: string) => img && img.trim() !== '').length > 0)
     ? listing.images.filter((img: string) => img && img.trim() !== '')
-    : [`https://picsum.photos/seed/${listing.game.replace(/\s+/g, '')}/800/400`];
+    : [`https://picsum.photos/seed/${(listing?.game || 'game').replace(/\s+/g, '')}/800/400`];
 
   return (
     <motion.div 

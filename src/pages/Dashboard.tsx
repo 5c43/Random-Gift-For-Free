@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { collection, query, where, getDocs, doc, getDoc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
-import { LayoutDashboard, ShoppingBag, DollarSign, List, MessageSquare, PlusCircle, CheckCircle, Wallet, ArrowUpRight, Clock, X } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, DollarSign, List, MessageSquare, PlusCircle, CheckCircle, Wallet, ArrowUpRight, Clock, X, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+
+import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
 export function Dashboard() {
   const { user, userData } = useAuth();
@@ -19,11 +21,17 @@ export function Dashboard() {
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [walletAddress, setWalletAddress] = useState('');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [profileForm, setProfileForm] = useState({
     displayName: userData?.displayName || '',
     photoURL: userData?.photoURL || '',
     bio: userData?.bio || ''
   });
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 5000);
+  };
 
   useEffect(() => {
     if (userData) {
@@ -46,20 +54,16 @@ export function Dashboard() {
         photoURL: profileForm.photoURL,
         bio: profileForm.bio
       });
-      alert('Profile updated successfully!');
+      showToast('Profile updated successfully!');
     } catch (error) {
-      console.error("Error updating profile:", error);
-      alert('Failed to update profile.');
+      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
+      showToast('Failed to update profile.', 'error');
     } finally {
       setSaving(false);
     }
   };
 
   const handleConfirmDelivery = async (purchaseId: string, listingId: string) => {
-    if (!window.confirm('Are you sure you have received the account and everything is correct? This will release the funds to the seller.')) {
-      return;
-    }
-    
     const purchase = purchases.find(p => p.id === purchaseId);
     if (!purchase) return;
 
@@ -83,12 +87,12 @@ export function Dashboard() {
       
       await batch.commit();
       
-      alert('Delivery confirmed! Thank you for your purchase.');
+      showToast('Delivery confirmed! Thank you for your purchase.');
       // Refresh data
-      window.location.reload();
+      setTimeout(() => window.location.reload(), 2000);
     } catch (error) {
-      console.error("Error confirming delivery:", error);
-      alert('Failed to confirm delivery. Please try again.');
+      handleFirestoreError(error, OperationType.WRITE, `purchases/${purchaseId}`);
+      showToast('Failed to confirm delivery. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -138,7 +142,7 @@ export function Dashboard() {
         const withdrawalsSnapshot = await getDocs(qWithdrawals);
         setWithdrawals(withdrawalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+        handleFirestoreError(error, OperationType.GET, 'dashboard_data');
       } finally {
         setLoading(false);
       }
@@ -149,26 +153,26 @@ export function Dashboard() {
 
   if (!user) return null;
 
-  const activeListingsCount = listings.filter(l => l.status === 'active').length;
-  const completedSalesCount = sales.filter(s => s.status === 'completed').length;
-  const totalEarnings = sales.filter(s => s.status === 'completed').reduce((sum, s) => sum + s.price, 0);
-  const totalWithdrawn = withdrawals.filter(w => w.status !== 'rejected').reduce((sum, w) => sum + w.amount, 0);
-  const availableBalance = totalEarnings - totalWithdrawn;
+  const activeListingsCount = (listings || []).filter(l => l?.status === 'active').length;
+  const completedSalesCount = (sales || []).filter(s => s?.status === 'completed').length;
+  const totalEarnings = (sales || []).filter(s => s?.status === 'completed').reduce((sum, s) => sum + (s?.price || 0), 0);
+  const totalWithdrawn = (withdrawals || []).filter(w => w?.status === 'completed').reduce((sum, w) => sum + (w?.amount || 0), 0);
+  const availableBalance = userData?.balance || 0;
 
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     const amount = parseFloat(withdrawAmount);
     if (isNaN(amount) || amount <= 0) {
-      alert('Please enter a valid amount.');
+      showToast('Please enter a valid amount.', 'error');
       return;
     }
     if (amount > availableBalance) {
-      alert('Insufficient balance.');
+      showToast('Insufficient balance.', 'error');
       return;
     }
     if (!walletAddress.trim()) {
-      alert('Please enter a wallet address.');
+      showToast('Please enter a wallet address.', 'error');
       return;
     }
 
@@ -193,15 +197,15 @@ export function Dashboard() {
       
       await batch.commit();
       
-      alert('Withdrawal request submitted! Our team will review it shortly.');
+      showToast('Withdrawal request submitted! Our team will review it shortly.');
       setIsWithdrawModalOpen(false);
       setWithdrawAmount('');
       setWalletAddress('');
       // Refresh data
-      window.location.reload();
+      setTimeout(() => window.location.reload(), 2000);
     } catch (error) {
-      console.error("Error submitting withdrawal:", error);
-      alert('Failed to submit withdrawal request.');
+      handleFirestoreError(error, OperationType.WRITE, 'withdrawals');
+      showToast('Failed to submit withdrawal request.', 'error');
     } finally {
       setSaving(false);
     }
@@ -209,6 +213,22 @@ export function Dashboard() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`fixed top-24 right-8 z-50 px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 border ${
+              toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
+            }`}
+          >
+            {toast.type === 'success' ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+            <span className="font-medium">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center gap-4 mb-8">
         <LayoutDashboard className="h-10 w-10 text-violet-400" />
         <div>

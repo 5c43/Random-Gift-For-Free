@@ -20,6 +20,9 @@ import { Bell, Gamepad2, MessageSquare, User, LogOut, Menu, ShieldCheck, LayoutD
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 import { motion } from 'motion/react';
+import { CustomCursor } from './pages/components/CustomCursor';
+import { ErrorBoundary } from './pages/components/ErrorBoundary';
+import { handleFirestoreError, OperationType } from './lib/firestore-errors';
 
 function ProfileCheck({ children }: { children: React.ReactNode }) {
   const { user, userData, loading } = useAuth();
@@ -33,8 +36,6 @@ function ProfileCheck({ children }: { children: React.ReactNode }) {
 
   return <>{children}</>;
 }
-import { CustomCursor } from './components/CustomCursor';
-import { ErrorBoundary } from './components/ErrorBoundary';
 
 function Navbar() {
   const { user, userData, logout } = useAuth();
@@ -52,6 +53,8 @@ function Navbar() {
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setUnreadCount(snapshot.size);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'notifications');
     });
     return () => unsubscribe();
   }, [user]);
@@ -83,14 +86,6 @@ function Navbar() {
             <Link to="/marketplace" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">Marketplace</Link>
             {user ? (
               <>
-                <Link to="/notifications" className="relative p-2 text-gray-300 hover:text-white transition-colors">
-                  <Bell className="h-5 w-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 h-4 w-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-black">
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </span>
-                  )}
-                </Link>
                 <Link to="/chat" className="text-sm font-medium text-gray-300 hover:text-white transition-colors flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" /> Messages
                 </Link>
@@ -111,13 +106,23 @@ function Navbar() {
                   </Link>
                 )}
                 <div 
-                  className="relative ml-2"
+                  className="relative ml-2 flex items-center gap-4"
                   onMouseEnter={handleMouseEnter}
                   onMouseLeave={handleMouseLeave}
                 >
                   <button className="flex items-center gap-2 focus:outline-none py-2">
                     <img src={userData?.photoURL || user.photoURL || `https://ui-avatars.com/api/?name=${user.email}`} alt="Avatar" className="h-9 w-9 rounded-full border-2 border-white/20 object-cover" />
                   </button>
+                  
+                  <Link to="/notifications" className="relative p-2 text-gray-300 hover:text-white transition-colors">
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 h-4 w-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-black">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </Link>
+
                   {profileMenuOpen && (
                     <div 
                       className="absolute right-0 top-full w-56 pt-1 z-50"

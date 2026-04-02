@@ -101,19 +101,23 @@ export function Marketplace() {
     fetchListings();
   }, []);
 
-  const filteredListings = listings
+  const filteredListings = (listings || [])
     .filter(listing => {
-      const matchesSearch = listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           listing.game.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesGame = selectedGame === 'All Games' || listing.game === selectedGame;
-      const matchesCategory = selectedCategory === 'All Categories' || listing.category === selectedCategory;
+      const title = listing?.title || '';
+      const game = listing?.game || '';
+      const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           game.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesGame = selectedGame === 'All Games' || game === selectedGame;
+      const matchesCategory = selectedCategory === 'All Categories' || (listing?.category || 'Accounts') === selectedCategory;
       return matchesSearch && matchesGame && matchesCategory;
     })
     .sort((a, b) => {
-      if (sortBy === 'Newest First') return b.createdAt - a.createdAt;
-      if (sortBy === 'Price: Low to High') return a.price - b.price;
-      if (sortBy === 'Price: High to Low') return b.price - a.price;
-      if (sortBy === 'Most Viewed') return (b.views || 0) - (a.views || 0);
+      const dateA = a?.createdAt instanceof Date ? a.createdAt.getTime() : 0;
+      const dateB = b?.createdAt instanceof Date ? b.createdAt.getTime() : 0;
+      if (sortBy === 'Newest First') return dateB - dateA;
+      if (sortBy === 'Price: Low to High') return (a?.price || 0) - (b?.price || 0);
+      if (sortBy === 'Price: High to Low') return (b?.price || 0) - (a?.price || 0);
+      if (sortBy === 'Most Viewed') return (b?.views || 0) - (a?.views || 0);
       return 0;
     });
 

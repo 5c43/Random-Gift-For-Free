@@ -7,6 +7,8 @@ import { Bell, Check, Trash2, ShoppingCart, DollarSign, MessageSquare, Info, Clo
 import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
 
+import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
+
 export function Notifications() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -27,6 +29,9 @@ export function Notifications() {
         ...doc.data()
       }));
       setNotifications(notifs);
+      setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'notifications');
       setLoading(false);
     });
 

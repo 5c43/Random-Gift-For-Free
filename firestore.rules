@@ -16,9 +16,9 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() &&
         (request.auth.uid == 'ywskXjtxYJVD5xSU5wSNcpaWnXZ2' || 
+         request.auth.token.email == "abdulla59868@gmail.com" ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
-         (request.auth.token.email == "abdulla59868@gmail.com" && request.auth.token.email_verified == true));
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
 
     function hasOnlyAllowedFields(fields) {
@@ -238,7 +238,7 @@ service cloud.firestore {
 
     match /notifications/{notificationId} {
       allow read: if isAuthenticated() && (resource.data.uid == request.auth.uid || isAdmin());
-      allow create: if isAdmin(); // Only system/admin can create notifications
+      allow create: if isAuthenticated() && (request.resource.data.uid == request.auth.uid || isAdmin());
       allow update: if isAuthenticated() && resource.data.uid == request.auth.uid && 
                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) &&
                     request.resource.data.read == true;

@@ -3,13 +3,15 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { collection, query, where, onSnapshot, orderBy, addDoc, serverTimestamp, getDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
-import { Send, User, Clock, MessageSquare, CheckCircle } from 'lucide-react';
+import { Send, User, Clock, MessageSquare, CheckCircle, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
+
+import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
 export function Chat() {
   const { chatId } = useParams<{ chatId: string }>();
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const navigate = useNavigate();
   const [chats, setChats] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
@@ -18,7 +20,13 @@ export function Chat() {
   const [currentChatDetails, setCurrentChatDetails] = useState<any>(null);
   const [purchaseDetails, setPurchaseDetails] = useState<any>(null);
   const [confirming, setConfirming] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 5000);
+  };
 
   useEffect(() => {
     if (!user) {
@@ -32,11 +40,17 @@ export function Chat() {
     const unsubscribe1 = onSnapshot(q1, (snapshot) => {
       const buyerChats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       updateChats(buyerChats, 'buyer');
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'chats');
+      setLoading(false);
     });
 
     const unsubscribe2 = onSnapshot(q2, (snapshot) => {
       const sellerChats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       updateChats(sellerChats, 'seller');
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'chats');
+      setLoading(false);
     });
 
     let allChats: any[] = [];
@@ -95,6 +109,8 @@ export function Chat() {
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `chats/${chatId}/messages`);
     });
 
     return () => unsubscribe();
@@ -102,9 +118,6 @@ export function Chat() {
 
   const handleConfirmDelivery = async () => {
     if (!currentChatDetails?.listingId || !user || !purchaseDetails) return;
-    if (!window.confirm('Are you sure you have received the account and everything is correct? This will release the funds to the seller.')) {
-      return;
-    }
     
     setConfirming(true);
     try {
@@ -126,11 +139,11 @@ export function Chat() {
       
       await batch.commit();
       
-      alert('Delivery confirmed! Thank you for your purchase.');
+      showToast('Delivery confirmed! Thank you for your purchase.');
       setPurchaseDetails({ ...purchaseDetails, status: 'completed' });
     } catch (error) {
-      console.error("Error confirming delivery:", error);
-      alert('Failed to confirm delivery. Please try again.');
+      handleFirestoreError(error, OperationType.WRITE, `purchases/${purchaseDetails.id}`);
+      showToast('Failed to confirm delivery. Please try again.', 'error');
     } finally {
       setConfirming(false);
     }
@@ -155,6 +168,18 @@ export function Chat() {
         lastMessage: text,
         lastMessageAt: serverTimestamp(),
       });
+
+      // Create notification for recipient
+      const recipientId = currentChatDetails.buyerId === user.uid ? currentChatDetails.sellerId : currentChatDetails.buyerId;
+      await addDoc(collection(db, 'notifications'), {
+        uid: recipientId,
+        title: "New Message",
+        message: `You received a new message from ${userData?.displayName || user.email?.split('@')[0]}`,
+        type: "message",
+        link: `/chat/${chatId}`,
+        read: false,
+        createdAt: serverTimestamp()
+      });
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -164,6 +189,21 @@ export function Chat() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 h-[calc(100vh-140px)]">
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`fixed top-24 right-8 z-50 px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 border ${
+              toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
+            }`}
+          >
+            {toast.type === 'success' ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+            <span className="font-medium">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl h-full flex overflow-hidden shadow-2xl">
         
         {/* Sidebar - Chat List */}

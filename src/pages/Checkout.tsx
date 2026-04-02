@@ -117,7 +117,7 @@ export function Checkout() {
 
   const handleCompletePayment = async () => {
     if (!receiptEmail) {
-      alert('Please enter your Ziina receipt email');
+      setPaymentError('Please enter your Ziina receipt email');
       return;
     }
     setLoading(true);
@@ -247,11 +247,11 @@ export function Checkout() {
                   <h2 className="text-2xl font-bold text-white mb-8">Order Summary</h2>
                   <div className="flex gap-6 items-center p-4 bg-white/5 rounded-2xl border border-white/5">
                     <div className="h-20 w-20 bg-violet-600/20 rounded-xl flex items-center justify-center text-3xl font-bold text-violet-400">
-                      {listing.game.charAt(0).toUpperCase()}
+                      {(listing?.game || 'G').charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white mb-1">{listing.title}</h3>
-                      <p className="text-gray-400 font-medium uppercase tracking-wider text-xs">{listing.game}</p>
+                      <h3 className="text-xl font-bold text-white mb-1">{listing?.title || 'Order'}</h3>
+                      <p className="text-gray-400 font-medium uppercase tracking-wider text-xs">{listing?.game || 'Unknown Game'}</p>
                       <div className="flex gap-4 mt-2 text-sm">
                         <span className="text-gray-500">Rank: <span className="text-gray-300 font-bold">{listing.rank || 'Premium'}</span></span>
                         <span className="text-gray-500">Level: <span className="text-gray-300 font-bold">{listing.level || 'N/A'}</span></span>

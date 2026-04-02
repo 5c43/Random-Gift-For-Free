@@ -5,6 +5,8 @@ import { useAuth } from '../AuthContext';
 import { ShieldAlert, Trash2, CheckCircle, XCircle, Users, ShoppingBag, Clock, ExternalLink, MessageSquare, User, AlertCircle, DollarSign } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
+import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
+
 export function Admin() {
   const { user, userData } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
@@ -15,6 +17,14 @@ export function Admin() {
   const [selectedApp, setSelectedApp] = useState<any>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
+  const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 5000);
+  };
 
   useEffect(() => {
     if (!user || (userData?.role !== 'admin' && user.uid !== 'ywskXjtxYJVD5xSU5wSNcpaWnXZ2')) return;
@@ -22,21 +32,30 @@ export function Admin() {
     const qUsers = query(collection(db, 'users'));
     const unsubscribeUsers = onSnapshot(qUsers, (snapshot) => {
       setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'users');
     });
 
     const qListings = query(collection(db, 'listings'));
     const unsubscribeListings = onSnapshot(qListings, (snapshot) => {
       setListings(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'listings');
     });
 
     const qApps = query(collection(db, 'seller_applications'));
     const unsubscribeApps = onSnapshot(qApps, (snapshot) => {
       setApplications(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'seller_applications');
     });
 
     const qWithdrawals = query(collection(db, 'withdrawals'));
     const unsubscribeWithdrawals = onSnapshot(qWithdrawals, (snapshot) => {
       setWithdrawals(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setLoading(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'withdrawals');
       setLoading(false);
     });
 
@@ -205,10 +224,55 @@ export function Admin() {
     }
   };
 
+  const handleSendAnnouncement = async () => {
+    if (!announcement.trim()) return;
+    setSendingAnnouncement(true);
+    try {
+      const { addDoc, collection, serverTimestamp } = await import('firebase/firestore');
+      
+      // Send to all users
+      const promises = users.map(u => 
+        addDoc(collection(db, 'notifications'), {
+          uid: u.id,
+          title: "Admin Announcement",
+          message: announcement,
+          type: "announcement",
+          link: "/",
+          read: false,
+          createdAt: serverTimestamp()
+        })
+      );
+      
+      await Promise.all(promises);
+      showToast('Announcement sent to all users!');
+      setAnnouncement('');
+    } catch (error) {
+      console.error("Error sending announcement:", error);
+      showToast('Failed to send announcement.', 'error');
+    } finally {
+      setSendingAnnouncement(false);
+    }
+  };
+
   const pendingApps = applications.filter(a => a.status === 'pending');
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`fixed top-24 right-8 z-50 px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 border ${
+              toast.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'
+            }`}
+          >
+            {toast.type === 'success' ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+            <span className="font-medium">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="flex items-center justify-between mb-12">
         <div className="flex items-center gap-4">
           <ShieldAlert className="h-12 w-12 text-violet-400" />
@@ -231,6 +295,30 @@ export function Admin() {
       ) : (
         <div className="space-y-12">
           
+          {/* Announcements Section */}
+          <div className="bg-gradient-to-r from-violet-600/10 to-fuchsia-600/10 border border-violet-500/20 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+            <div className="flex items-center gap-3 mb-6">
+              <ShieldAlert className="h-8 w-8 text-violet-400" />
+              <h2 className="text-2xl font-bold text-white">Global Announcement</h2>
+            </div>
+            <div className="space-y-4">
+              <textarea 
+                value={announcement}
+                onChange={e => setAnnouncement(e.target.value)}
+                placeholder="Type your announcement here... It will be sent to all users as a notification."
+                className="w-full bg-black/40 border border-white/10 rounded-2xl p-6 text-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all resize-none"
+                rows={3}
+              />
+              <button 
+                onClick={handleSendAnnouncement}
+                disabled={sendingAnnouncement || !announcement.trim()}
+                className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-violet-500/20 disabled:opacity-50 flex items-center gap-2"
+              >
+                {sendingAnnouncement ? 'Sending...' : 'Send to All Users'}
+              </button>
+            </div>
+          </div>
+
           {/* Verification Queue */}
           <div className="bg-[#161616] border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>

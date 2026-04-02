@@ -4,8 +4,8 @@ import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/fi
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
-import { ShieldCheck, Upload, DollarSign, List, Info, ChevronDown, CheckCircle2, AlertCircle } from 'lucide-react';
-import { motion } from 'motion/react';
+import { ShieldCheck, Upload, DollarSign, List, Info, ChevronDown, CheckCircle2, AlertCircle, GripVertical, Trash2, Plus } from 'lucide-react';
+import { motion, Reorder } from 'motion/react';
 
 export function CreateListing() {
   const { user, userData } = useAuth();
@@ -20,8 +20,10 @@ export function CreateListing() {
     level: '',
     rank: '',
     skins: '',
-    images: ['', '', '', ''],
+    images: [] as string[],
   });
+
+  const [newImageUrl, setNewImageUrl] = useState('');
 
   const games = [
     "Fortnite", "Valorant", "League of Legends", "CS2", "Genshin Impact", 
@@ -29,6 +31,26 @@ export function CreateListing() {
   ];
 
   const categories = ["Accounts", "Items", "Boosting", "Currency"];
+
+  const handleAddImage = () => {
+    if (!newImageUrl.trim()) return;
+    if (formData.images.length >= 7) return;
+    setFormData({
+      ...formData,
+      images: [...formData.images, newImageUrl.trim()]
+    });
+    setNewImageUrl('');
+  };
+
+  const handleRemoveImage = (index: number) => {
+    const newImages = [...formData.images];
+    newImages.splice(index, 1);
+    setFormData({ ...formData, images: newImages });
+  };
+
+  const handleReorderImages = (newOrder: string[]) => {
+    setFormData({ ...formData, images: newOrder });
+  };
 
   const handlePostListing = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,39 +222,76 @@ export function CreateListing() {
               <h2 className="text-xl font-bold text-white">Screenshot / Image</h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {formData.images.map((url, index) => (
-                <div key={index} className="space-y-3">
-                  <div className="relative">
-                    <input 
-                      type="url" 
-                      value={url} 
-                      onChange={e => {
-                        const newImages = [...formData.images];
-                        newImages[index] = e.target.value;
-                        setFormData({...formData, images: newImages});
-                      }} 
-                      className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-600 text-sm" 
-                      placeholder={`Image URL ${index + 1}`}
-                    />
-                  </div>
-                  {url && (
-                    <div className="h-32 w-full rounded-2xl overflow-hidden border border-[#262626] bg-black/40 group relative">
-                      <img 
-                        src={url} 
-                        alt={`Preview ${index + 1}`} 
-                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x200?text=Invalid+URL';
-                        }}
-                      />
-                    </div>
-                  )}
+            <div className="space-y-6">
+              <div className="flex gap-3">
+                <input 
+                  type="url" 
+                  value={newImageUrl} 
+                  onChange={e => setNewImageUrl(e.target.value)} 
+                  className="flex-grow bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all placeholder:text-gray-600 text-sm" 
+                  placeholder="Paste direct image URL (e.g. Imgur, Discord)"
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddImage())}
+                />
+                <button 
+                  type="button"
+                  onClick={handleAddImage}
+                  disabled={!newImageUrl.trim() || formData.images.length >= 7}
+                  className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-6 rounded-2xl font-bold transition-all flex items-center gap-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add
+                </button>
+              </div>
+
+              {formData.images.length > 0 && (
+                <Reorder.Group axis="y" values={formData.images} onReorder={handleReorderImages} className="space-y-3">
+                  {formData.images.map((url, index) => (
+                    <Reorder.Item 
+                      key={url + index} 
+                      value={url}
+                      className="bg-[#1A1A1A] border border-[#262626] rounded-2xl p-4 flex items-center gap-4 group"
+                    >
+                      <div className="cursor-grab active:cursor-grabbing p-1 text-gray-600 hover:text-gray-400">
+                        <GripVertical className="h-5 w-5" />
+                      </div>
+                      
+                      <div className="h-16 w-16 rounded-xl overflow-hidden border border-[#262626] flex-shrink-0 bg-black/40">
+                        <img 
+                          src={url} 
+                          alt={`Preview ${index + 1}`} 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100x100?text=Error';
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex-grow min-w-0">
+                        <p className="text-xs text-gray-500 truncate">{url}</p>
+                      </div>
+
+                      <button 
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="p-2 text-gray-600 hover:text-red-400 transition-colors"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </Reorder.Item>
+                  ))}
+                </Reorder.Group>
+              )}
+
+              {formData.images.length === 0 && (
+                <div className="border-2 border-dashed border-[#262626] rounded-3xl p-12 text-center">
+                  <Upload className="h-12 w-12 text-gray-600 mx-auto mb-4 opacity-20" />
+                  <p className="text-gray-500 font-medium">No images added yet</p>
+                  <p className="text-xs text-gray-600 mt-2">Add up to 7 screenshots of your account</p>
                 </div>
-              ))}
+              )}
             </div>
-            <p className="text-xs text-gray-500 mt-6 text-center italic">Provide direct image URLs (e.g. from Imgur or Discord)</p>
+            <p className="text-xs text-gray-500 mt-6 text-center italic">Drag the handles to reorder images. First image will be the cover.</p>
           </motion.div>
 
           {/* Section 3: Pricing & Details */}

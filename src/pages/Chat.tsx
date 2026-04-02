@@ -28,6 +28,8 @@ export function Chat() {
     setTimeout(() => setToast(null), 5000);
   };
 
+  const [chatUsers, setChatUsers] = useState<Record<string, any>>({});
+
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -39,7 +41,7 @@ export function Chat() {
 
     const unsubscribe1 = onSnapshot(q1, (snapshot) => {
       const buyerChats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      updateChats(buyerChats, 'buyer');
+      updateChats(buyerChats);
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, 'chats');
       setLoading(false);
@@ -47,14 +49,14 @@ export function Chat() {
 
     const unsubscribe2 = onSnapshot(q2, (snapshot) => {
       const sellerChats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      updateChats(sellerChats, 'seller');
+      updateChats(sellerChats);
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, 'chats');
       setLoading(false);
     });
 
     let allChats: any[] = [];
-    const updateChats = (newChats: any[], role: string) => {
+    const updateChats = async (newChats: any[]) => {
       allChats = [...allChats.filter(c => !newChats.find(nc => nc.id === c.id)), ...newChats];
       allChats.sort((a, b) => {
         const timeA = a.lastMessageAt?.toMillis() || 0;
@@ -63,6 +65,17 @@ export function Chat() {
       });
       setChats([...allChats]);
       setLoading(false);
+
+      // Fetch user details for each chat
+      for (const chat of newChats) {
+        const otherUserId = chat.buyerId === user.uid ? chat.sellerId : chat.buyerId;
+        if (!chatUsers[otherUserId]) {
+          const userDoc = await getDoc(doc(db, 'users', otherUserId));
+          if (userDoc.exists()) {
+            setChatUsers(prev => ({ ...prev, [otherUserId]: userDoc.data() }));
+          }
+        }
+      }
     };
 
     return () => {
@@ -217,25 +230,47 @@ export function Chat() {
             ) : chats.length === 0 ? (
               <div className="p-6 text-center text-gray-400 font-medium">No messages yet.</div>
             ) : (
-              chats.map(chat => (
-                <Link 
-                  key={chat.id} 
-                  to={`/chat/${chat.id}`}
-                  className={`block p-5 border-b border-white/5 hover:bg-white/10 transition-all ${chatId === chat.id ? 'bg-white/10 border-l-4 border-l-violet-500' : 'border-l-4 border-l-transparent'}`}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="font-bold text-gray-200 truncate">
-                      {chat.buyerId === user.uid ? 'Seller' : 'Buyer'}
-                    </span>
-                    {chat.lastMessageAt && (
-                      <span className="text-xs font-medium text-gray-500">
-                        {format(chat.lastMessageAt.toDate(), 'MMM d')}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-400 truncate leading-relaxed">{chat.lastMessage || 'No messages yet'}</p>
-                </Link>
-              ))
+              chats.map(chat => {
+                const otherUserId = chat.buyerId === user.uid ? chat.sellerId : chat.buyerId;
+                const otherUser = chatUsers[otherUserId];
+                const isSeller = chat.sellerId === otherUserId;
+
+                return (
+                  <Link 
+                    key={chat.id} 
+                    to={`/chat/${chat.id}`}
+                    className={`block p-5 border-b border-white/5 hover:bg-white/10 transition-all ${chatId === chat.id ? 'bg-white/10 border-l-4 border-l-violet-500' : 'border-l-4 border-l-transparent'}`}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center overflow-hidden border border-white/10">
+                        {otherUser?.photoURL ? (
+                          <img src={otherUser.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="h-5 w-5 text-gray-400" />
+                        )}
+                      </div>
+                      <div className="flex-grow min-w-0">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-gray-200 truncate">
+                            {otherUser?.username || otherUser?.displayName || 'Loading...'}
+                          </span>
+                          {chat.lastMessageAt && (
+                            <span className="text-[10px] font-medium text-gray-500">
+                              {format(chat.lastMessageAt.toDate(), 'MMM d')}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase ${isSeller ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
+                            {isSeller ? 'Seller' : 'Buyer'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-400 truncate leading-relaxed pl-13">{chat.lastMessage || 'No messages yet'}</p>
+                  </Link>
+                );
+              })
             )}
           </div>
         </div>
@@ -248,7 +283,7 @@ export function Chat() {
               <div className="p-5 border-b border-white/10 bg-white/5 flex items-center justify-between backdrop-blur-md">
                 <div className="flex items-center gap-4">
                   <Link 
-                    to={`/profile/${currentChatDetails?.buyerId === user.uid ? currentChatDetails?.sellerId : currentChatDetails?.buyerId}`}
+                    to={`/seller/${currentChatDetails?.buyerId === user.uid ? currentChatDetails?.sellerId : currentChatDetails?.buyerId}`}
                     className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center overflow-hidden border border-white/20 shadow-lg hover:border-violet-500/50 transition-all"
                   >
                     {currentChatDetails?.otherUser?.photoURL ? (
@@ -258,12 +293,17 @@ export function Chat() {
                     )}
                   </Link>
                   <div>
-                    <Link 
-                      to={`/profile/${currentChatDetails?.buyerId === user.uid ? currentChatDetails?.sellerId : currentChatDetails?.buyerId}`}
-                      className="font-bold text-white text-lg hover:text-violet-400 transition-colors"
-                    >
-                      {currentChatDetails?.otherUser?.displayName || 'Loading...'}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link 
+                        to={`/seller/${currentChatDetails?.buyerId === user.uid ? currentChatDetails?.sellerId : currentChatDetails?.buyerId}`}
+                        className="font-bold text-white text-lg hover:text-violet-400 transition-colors"
+                      >
+                        {currentChatDetails?.otherUser?.username || currentChatDetails?.otherUser?.displayName || 'Loading...'}
+                      </Link>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase ${currentChatDetails?.sellerId !== user.uid ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}`}>
+                        {currentChatDetails?.sellerId !== user.uid ? 'Seller' : 'Buyer'}
+                      </span>
+                    </div>
                     <p className="text-sm font-medium text-violet-400 truncate max-w-[250px]">{currentChatDetails?.listing?.title}</p>
                   </div>
                 </div>
@@ -284,7 +324,7 @@ export function Chat() {
               </div>
 
               {/* Messages */}
-              <div className="flex-grow overflow-y-auto p-6 space-y-6 custom-scrollbar">
+              <div className="flex-grow overflow-y-auto p-6 space-y-8 custom-scrollbar">
                 {messages.length === 0 ? (
                   <div className="text-center text-gray-500 mt-20">
                     <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-20 text-violet-400" />
@@ -292,24 +332,76 @@ export function Chat() {
                     <p className="text-sm mt-2 font-medium">Never share your password or personal information.</p>
                   </div>
                 ) : (
-                  messages.map(msg => {
-                    const isMe = msg.senderId === user.uid;
-                    return (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }} 
-                        animate={{ opacity: 1, y: 0 }} 
-                        key={msg.id} 
-                        className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`max-w-[75%] rounded-2xl p-4 shadow-md ${isMe ? 'bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white rounded-tr-sm' : 'bg-white/10 text-gray-200 border border-white/10 backdrop-blur-md rounded-tl-sm'}`}>
-                          <p className="whitespace-pre-wrap break-words leading-relaxed">{msg.text}</p>
-                          <div className={`text-[11px] mt-2 font-medium text-right ${isMe ? 'text-violet-200' : 'text-gray-500'}`}>
-                            {msg.createdAt ? format(msg.createdAt.toDate(), 'h:mm a') : 'Sending...'}
-                          </div>
+                  (() => {
+                    const groups: { date: string; messages: any[] }[] = [];
+                    messages.forEach(msg => {
+                      if (!msg.createdAt) {
+                        if (groups.length === 0) {
+                          groups.push({ date: 'Today', messages: [msg] });
+                        } else {
+                          groups[groups.length - 1].messages.push(msg);
+                        }
+                        return;
+                      }
+                      const date = format(msg.createdAt.toDate(), 'MMMM d, yyyy');
+                      const existingGroup = groups.find(g => g.date === date);
+                      if (existingGroup) {
+                        existingGroup.messages.push(msg);
+                      } else {
+                        groups.push({ date, messages: [msg] });
+                      }
+                    });
+
+                    return groups.map((group, groupIdx) => (
+                      <div key={group.date} className="space-y-6">
+                        <div className="flex justify-center">
+                          <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest">
+                            {group.date === format(new Date(), 'MMMM d, yyyy') ? 'Today' : group.date}
+                          </span>
                         </div>
-                      </motion.div>
-                    );
-                  })
+                        {group.messages.map((msg, msgIdx) => {
+                          const isMe = msg.senderId === user.uid;
+                          const showAvatar = !isMe && (msgIdx === 0 || group.messages[msgIdx - 1].senderId !== msg.senderId);
+                          
+                          return (
+                            <motion.div 
+                              initial={{ opacity: 0, x: isMe ? 20 : -20 }} 
+                              animate={{ opacity: 1, x: 0 }} 
+                              key={msg.id} 
+                              className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}
+                            >
+                              {!isMe && (
+                                <div className="w-8 flex-shrink-0">
+                                  {showAvatar ? (
+                                    <div className="h-8 w-8 rounded-full bg-white/10 border border-white/20 overflow-hidden shadow-sm">
+                                      {currentChatDetails?.otherUser?.photoURL ? (
+                                        <img src={currentChatDetails.otherUser.photoURL} alt="Avatar" className="w-full h-full object-cover" />
+                                      ) : (
+                                        <User className="h-4 w-4 text-gray-400 m-2" />
+                                      )}
+                                    </div>
+                                  ) : <div className="w-8" />}
+                                </div>
+                              )}
+                              <div className={`max-w-[70%] group relative`}>
+                                <div className={`p-4 shadow-lg ${
+                                  isMe 
+                                    ? 'bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white rounded-2xl rounded-tr-none' 
+                                    : 'bg-[#1a1a1a] text-gray-200 border border-white/10 backdrop-blur-md rounded-2xl rounded-tl-none'
+                                }`}>
+                                  <p className="whitespace-pre-wrap break-words leading-relaxed text-[15px]">{msg.text}</p>
+                                </div>
+                                <div className={`text-[10px] mt-1.5 font-bold flex items-center gap-1.5 ${isMe ? 'justify-end text-violet-300/60' : 'justify-start text-gray-500'}`}>
+                                  {msg.createdAt ? format(msg.createdAt.toDate(), 'h:mm a') : 'Sending...'}
+                                  {isMe && <CheckCircle className="h-3 w-3 opacity-40" />}
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    ));
+                  })()
                 )}
                 <div ref={messagesEndRef} />
               </div>

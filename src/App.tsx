@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './AuthContext';
 import { Home } from './pages/Home';
 import { Marketplace } from './pages/Marketplace';
+import { FreeAccounts } from './pages/FreeAccounts';
 import { CreateListing } from './pages/CreateListing';
 import { Offer } from './pages/Offer';
 import { SellerProfile } from './pages/SellerProfile';
@@ -86,6 +87,9 @@ function Navbar() {
           </div>
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/marketplace" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">Marketplace</Link>
+            <Link to="/free-accounts" className="text-sm font-medium text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-2">
+              <Zap className="h-4 w-4" /> Free Accounts
+            </Link>
             {user ? (
               <>
                 <Link to="/chat" className="text-sm font-medium text-gray-300 hover:text-white transition-colors flex items-center gap-2">
@@ -188,6 +192,9 @@ function Navbar() {
         <div className="md:hidden bg-[#0a0a0a] border-t border-white/10">
           <div className="px-4 pt-4 pb-6 space-y-2">
             <Link to="/marketplace" className="block px-3 py-3 text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors">Marketplace</Link>
+            <Link to="/free-accounts" className="block px-3 py-3 text-base font-medium text-violet-400 hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3">
+              <Zap className="h-5 w-5" /> Free Accounts
+            </Link>
             {user ? (
               <>
                 <Link to="/notifications" className="block px-3 py-3 text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3"><Bell className="h-5 w-5" /> Notifications</Link>
@@ -227,6 +234,7 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/marketplace" element={<Marketplace />} />
+                  <Route path="/free-accounts" element={<FreeAccounts />} />
                   <Route path="/offer/:id" element={<Offer />} />
                   <Route path="/seller/:id" element={<SellerProfile />} />
                   <Route path="/verify" element={<SellerVerification />} />

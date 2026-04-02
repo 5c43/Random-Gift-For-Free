@@ -95,12 +95,19 @@ export function SellerProfile() {
           <div className="flex-1 text-center md:text-left">
             <div className="flex flex-col md:flex-row md:items-center gap-4 mb-2">
               <h1 className="text-4xl font-extrabold text-white">{seller.displayName || 'Anonymous Seller'}</h1>
-              {seller.isVerifiedSeller && (
-                <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-sm font-bold border border-emerald-500/30 shadow-inner">
-                  <ShieldCheck className="h-4 w-4" />
-                  Verified
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                {seller.isVerifiedSeller && (
+                  <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-sm font-bold border border-emerald-500/30 shadow-inner">
+                    <ShieldCheck className="h-4 w-4" />
+                    Verified
+                  </span>
+                )}
+                <div className="flex items-center gap-1.5 bg-yellow-500/10 text-yellow-400 px-3 py-1 rounded-full text-sm font-bold border border-yellow-500/20 shadow-inner">
+                  <Star className="h-4 w-4 fill-current" />
+                  <span>{averageRating}</span>
+                  <span className="text-yellow-400/60 text-xs font-medium">({reviews.length})</span>
+                </div>
+              </div>
             </div>
             {seller.username && (
               <p className="text-violet-400 font-bold text-lg mb-4">@{seller.username}</p>
@@ -108,8 +115,8 @@ export function SellerProfile() {
             
             <div className="flex flex-wrap justify-center md:justify-start gap-6 text-gray-300 mb-6 font-medium">
               <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl border border-white/10">
-                <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                <span className="text-lg">{averageRating} <span className="text-gray-500 text-sm">({reviews.length} reviews)</span></span>
+                <ShoppingBag className="h-5 w-5 text-fuchsia-400" />
+                <span>{listings.length} Active Listings</span>
               </div>
               <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-xl border border-white/10">
                 <Clock className="h-5 w-5 text-violet-400" />

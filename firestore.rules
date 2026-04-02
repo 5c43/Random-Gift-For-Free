@@ -144,6 +144,15 @@ service cloud.firestore {
              data.isAdmin is bool;
     }
 
+    function isValidFreeAccount(data) {
+      return hasOnlyAllowedFields(['title', 'description', 'imageUrl', 'link', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
+             data.description is string && data.description.size() > 0 && data.description.size() <= 2000 &&
+             (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 500)) &&
+             data.link is string && data.link.size() <= 500 &&
+             data.createdAt is timestamp;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -285,6 +294,14 @@ service cloud.firestore {
                      isAdmin()) &&
                     (get(/databases/$(database)/documents/tickets/$(ticketId)).data.uid == request.auth.uid ||
                      isAdmin());
+    }
+
+    match /free_accounts/{accountId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidFreeAccount(request.resource.data);
+      allow update: if isAdmin() && isValidFreeAccount(request.resource.data) &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
     }
   }
 }

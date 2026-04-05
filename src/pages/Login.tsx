@@ -11,7 +11,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { LogIn, ShieldCheck, Zap, Globe, Mail, Lock, User as UserIcon, Phone, Smartphone, Apple } from 'lucide-react';
+import { LogIn, ShieldCheck, Zap, Globe, Mail, Lock, User as UserIcon, Phone, Smartphone, Apple, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export function Login() {
@@ -165,7 +165,7 @@ export function Login() {
         <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-fuchsia-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="text-center relative z-10">
-          <div className="mx-auto h-20 w-20 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.5)] transform rotate-3 hover:rotate-6 transition-transform mb-6">
+          <div className="mx-auto h-20 w-20 bg-gradient-to-br from-red-600 to-red-800 rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(220,38,38,0.5)] transform rotate-3 hover:rotate-6 transition-transform mb-6">
             <LogIn className="h-10 w-10 text-white transform -rotate-3" />
           </div>
           <h2 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300 tracking-tight">
@@ -174,6 +174,57 @@ export function Login() {
           <p className="mt-4 text-lg text-gray-400 font-medium">
             {isSignUp ? 'Join the most trusted gaming marketplace.' : 'Sign in to buy, sell, and trade securely.'}
           </p>
+        </div>
+
+        {/* Product Showcase Description */}
+        <div className="mt-8 p-6 bg-white/5 border border-white/10 rounded-2xl relative z-10">
+          <h3 className="text-white font-bold mb-2 flex items-center gap-2">
+            <Zap className="h-4 w-4 text-red-500" />
+            Premium Gaming Assets
+          </h3>
+          <p className="text-gray-400 text-sm leading-relaxed">
+            GameVault provides high-quality, verified gaming accounts and digital assets with instant delivery and lifetime warranty. Join our community of over 50,000 satisfied gamers.
+          </p>
+        </div>
+
+        {/* Discord Section */}
+        <div className="mt-8 p-6 bg-indigo-600/10 border border-indigo-500/20 rounded-2xl relative z-10">
+          <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-indigo-400" />
+            Connect with Fellow Users on Discord
+          </h3>
+          
+          <div className="space-y-4 mb-6">
+            <div className="flex gap-3">
+              <div className="h-8 w-8 rounded-lg bg-indigo-500/20 flex items-center justify-center shrink-0">
+                <ShieldCheck className="h-4 w-4 text-indigo-400" />
+              </div>
+              <div>
+                <h4 className="text-white text-sm font-bold">24/7 Live Support</h4>
+                <p className="text-gray-400 text-xs">Get help from our support team and community experts anytime</p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <div className="h-8 w-8 rounded-lg bg-indigo-500/20 flex items-center justify-center shrink-0">
+                <Globe className="h-4 w-4 text-indigo-400" />
+              </div>
+              <div>
+                <h4 className="text-white text-sm font-bold">Latest Fortnite News</h4>
+                <p className="text-gray-400 text-xs">Keep up with the latest Fortnite news and updates from our community</p>
+              </div>
+            </div>
+          </div>
+
+          <a 
+            href="https://discord.gg/0-n" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+          >
+            Join Our Discord
+            <span className="text-xs opacity-70">Discord.gg/0-n</span>
+          </a>
         </div>
 
         {error && (

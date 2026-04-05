@@ -6,6 +6,7 @@ import { useAuth } from '../AuthContext';
 import { Send, User, Clock, MessageSquare, CheckCircle, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'motion/react';
+import { ReviewModal } from '../components/ReviewModal';
 
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
@@ -20,6 +21,7 @@ export function Chat() {
   const [currentChatDetails, setCurrentChatDetails] = useState<any>(null);
   const [purchaseDetails, setPurchaseDetails] = useState<any>(null);
   const [confirming, setConfirming] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -154,6 +156,7 @@ export function Chat() {
       
       showToast('Delivery confirmed! Thank you for your purchase.');
       setPurchaseDetails({ ...purchaseDetails, status: 'completed' });
+      setShowReviewModal(true);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `purchases/${purchaseDetails.id}`);
       showToast('Failed to confirm delivery. Please try again.', 'error');
@@ -217,6 +220,33 @@ export function Chat() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        onSubmit={async (rating, comment) => {
+          if (!purchaseDetails) return;
+          try {
+            await addDoc(collection(db, 'reviews'), {
+              sellerId: purchaseDetails.sellerId,
+              buyerId: user.uid,
+              buyerName: userData?.username || userData?.displayName || 'Anonymous',
+              rating,
+              comment,
+              listingId: currentChatDetails.listingId,
+              listingTitle: currentChatDetails.listing.title,
+              createdAt: serverTimestamp()
+            });
+            showToast('Review submitted! Thank you.');
+          } catch (error) {
+            console.error("Error submitting review:", error);
+            showToast('Failed to submit review.', 'error');
+          }
+        }}
+        title="Rate the Seller"
+        subtitle={`How was your experience with ${currentChatDetails?.otherUser?.username || 'the seller'}?`}
+        type="seller"
+      />
       <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl h-full flex overflow-hidden shadow-2xl">
         
         {/* Sidebar - Chat List */}

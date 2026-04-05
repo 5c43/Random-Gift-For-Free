@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
 import { Gift, Plus, Trash2, ExternalLink, ShieldCheck, AlertCircle, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
+import { ReviewModal } from '../components/ReviewModal';
 
 interface FreeAccount {
   id: string;
@@ -28,7 +30,9 @@ export function FreeAccounts() {
   });
 
   const [claimingAccount, setClaimingAccount] = useState<FreeAccount | null>(null);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showCopyToast, setShowCopyToast] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -77,25 +81,25 @@ export function FreeAccounts() {
   return (
     <div className="min-h-screen bg-[#0B0B0B] text-white py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background Glow */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-violet-600/5 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-fuchsia-600/5 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-600/5 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-red-600/5 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-16">
           <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/10 border border-violet-500/20 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 mb-6"
           >
-            <Gift className="h-4 w-4 text-violet-400" />
-            <span className="text-xs font-bold text-violet-400 uppercase tracking-widest">Community Rewards</span>
+            <Gift className="h-4 w-4 text-red-400" />
+            <span className="text-xs font-bold text-red-400 uppercase tracking-widest">Community Rewards</span>
           </motion.div>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl md:text-6xl font-extrabold mb-6 tracking-tight"
           >
-            Free <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">Accounts</span>
+            Free <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600">Accounts</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -113,7 +117,7 @@ export function FreeAccounts() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowAddModal(true)}
-              className="mt-10 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white px-8 py-4 rounded-2xl font-bold transition-all shadow-lg shadow-violet-500/20 flex items-center gap-3 mx-auto"
+              className="mt-10 bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white px-8 py-4 rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20 flex items-center gap-3 mx-auto"
             >
               <Plus className="h-5 w-5" />
               Post Free Account
@@ -123,7 +127,7 @@ export function FreeAccounts() {
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
           </div>
         ) : accounts.length === 0 ? (
           <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/10">
@@ -138,7 +142,7 @@ export function FreeAccounts() {
                 key={account.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="group bg-[#161616] border border-[#262626] rounded-3xl overflow-hidden shadow-xl hover:border-violet-500/50 transition-all relative"
+                className="group bg-[#161616] border border-[#262626] rounded-3xl overflow-hidden shadow-xl hover:border-red-500/50 transition-all relative"
               >
                 <div className="p-8">
                   {account.imageUrl && (
@@ -152,15 +156,21 @@ export function FreeAccounts() {
                     </div>
                   )}
                   <div className="flex items-center gap-2 mb-4">
-                    <span className="bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md">Admin Drop</span>
+                    <span className="bg-red-600 text-white text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md">Admin Drop</span>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-violet-400 transition-colors">{account.title}</h3>
+                  <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-red-400 transition-colors">{account.title}</h3>
                   <p className="text-gray-400 text-sm leading-relaxed mb-8 line-clamp-3">{account.description}</p>
                   
                   <div className="flex items-center justify-between">
                     <button 
-                      onClick={() => setClaimingAccount(account)}
-                      className="flex items-center gap-2 text-violet-400 font-bold hover:text-violet-300 transition-colors"
+                      onClick={() => {
+                        if (!user) {
+                          setShowLoginPrompt(true);
+                        } else {
+                          setClaimingAccount(account);
+                        }
+                      }}
+                      className="flex items-center gap-2 text-red-400 font-bold hover:text-red-300 transition-colors"
                     >
                       Claim Account <ExternalLink className="h-4 w-4" />
                     </button>
@@ -239,6 +249,71 @@ export function FreeAccounts() {
         )}
       </AnimatePresence>
 
+      {/* Login Prompt Modal */}
+      <AnimatePresence>
+        {showLoginPrompt && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowLoginPrompt(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            ></motion.div>
+            
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-[#161616] border border-[#262626] rounded-3xl p-8 w-full max-w-sm relative z-10 shadow-2xl text-center"
+            >
+              <div className="h-20 w-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <ShieldCheck className="h-10 w-10 text-red-400" />
+              </div>
+              <h2 className="text-3xl font-bold text-white mb-2">Login Required</h2>
+              <p className="text-gray-400 mb-8">You must be logged in to claim free accounts. Create an account to get started!</p>
+              
+              <Link 
+                to="/login"
+                className="block w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl transition-all mb-4"
+              >
+                Login / Sign Up
+              </Link>
+              
+              <button 
+                onClick={() => setShowLoginPrompt(false)}
+                className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-xl transition-all border border-white/10"
+              >
+                Close
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        onSubmit={async (rating, comment) => {
+          try {
+            await addDoc(collection(db, 'site_reviews'), {
+              uid: user?.uid,
+              userName: userData?.username || userData?.displayName || 'Anonymous',
+              rating,
+              comment,
+              type: 'free_account_claim',
+              createdAt: serverTimestamp()
+            });
+          } catch (error) {
+            console.error("Error submitting review:", error);
+          }
+        }}
+        title="Rate Us!"
+        subtitle="How was your experience claiming this free account?"
+        type="site"
+      />
+
       {/* Claim Modal */}
       <AnimatePresence>
         {claimingAccount && (
@@ -247,7 +322,10 @@ export function FreeAccounts() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setClaimingAccount(null)}
+              onClick={() => {
+                setClaimingAccount(null);
+                setShowReviewModal(true);
+              }}
               className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             ></motion.div>
             
@@ -257,13 +335,13 @@ export function FreeAccounts() {
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="bg-[#161616] border border-[#262626] rounded-3xl p-8 w-full max-w-lg relative z-10 shadow-2xl text-center"
             >
-              <div className="h-20 w-20 bg-violet-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Gift className="h-10 w-10 text-violet-400" />
+              <div className="h-20 w-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Gift className="h-10 w-10 text-red-400" />
               </div>
               <h2 className="text-3xl font-bold text-white mb-2">{claimingAccount.title}</h2>
               <p className="text-gray-400 mb-8">Here are the details for your free account:</p>
               
-              <div className="bg-black/40 border border-white/10 rounded-2xl p-6 mb-8 font-mono text-lg break-all">
+              <div className="bg-black/40 border border-white/10 rounded-2xl p-6 mb-8 font-mono text-lg break-all text-red-400">
                 {claimingAccount.link}
               </div>
               
@@ -273,7 +351,7 @@ export function FreeAccounts() {
                   setShowCopyToast(true);
                   setTimeout(() => setShowCopyToast(false), 2000);
                 }}
-                className="w-full bg-violet-600 hover:bg-violet-500 text-white font-bold py-4 rounded-xl transition-all mb-4 flex items-center justify-center gap-2"
+                className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl transition-all mb-4 flex items-center justify-center gap-2"
               >
                 {showCopyToast ? (
                   <>
@@ -286,7 +364,10 @@ export function FreeAccounts() {
               </button>
               
               <button 
-                onClick={() => setClaimingAccount(null)}
+                onClick={() => {
+                  setClaimingAccount(null);
+                  setShowReviewModal(true);
+                }}
                 className="w-full bg-white/5 hover:bg-white/10 text-white font-bold py-4 rounded-xl transition-all border border-white/10"
               >
                 Close
@@ -323,7 +404,7 @@ export function FreeAccounts() {
                     type="text" 
                     value={newAccount.title}
                     onChange={e => setNewAccount({...newAccount, title: e.target.value})}
-                    className="w-full bg-[#1A1A1A] border border-[#262626] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
+                    className="w-full bg-[#1A1A1A] border border-[#262626] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all"
                     placeholder="e.g. Free Fortnite Account with OG Skins"
                   />
                 </div>
@@ -334,7 +415,7 @@ export function FreeAccounts() {
                     rows={3}
                     value={newAccount.description}
                     onChange={e => setNewAccount({...newAccount, description: e.target.value})}
-                    className="w-full bg-[#1A1A1A] border border-[#262626] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all resize-none"
+                    className="w-full bg-[#1A1A1A] border border-[#262626] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all resize-none"
                     placeholder="Details about the account..."
                   />
                 </div>
@@ -344,7 +425,7 @@ export function FreeAccounts() {
                     type="url" 
                     value={newAccount.imageUrl}
                     onChange={e => setNewAccount({...newAccount, imageUrl: e.target.value})}
-                    className="w-full bg-[#1A1A1A] border border-[#262626] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
+                    className="w-full bg-[#1A1A1A] border border-[#262626] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all"
                     placeholder="https://example.com/image.png"
                   />
                 </div>
@@ -355,7 +436,7 @@ export function FreeAccounts() {
                     type="text" 
                     value={newAccount.link}
                     onChange={e => setNewAccount({...newAccount, link: e.target.value})}
-                    className="w-full bg-[#1A1A1A] border border-[#262626] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
+                    className="w-full bg-[#1A1A1A] border border-[#262626] rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all"
                     placeholder="Link to claim or login info"
                   />
                 </div>
@@ -370,7 +451,7 @@ export function FreeAccounts() {
                   </button>
                   <button 
                     type="submit"
-                    className="flex-1 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-violet-500/20"
+                    className="flex-1 bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-red-500/20"
                   >
                     Post Now
                   </button>

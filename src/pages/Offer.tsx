@@ -4,7 +4,7 @@ import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/fires
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
-import { ShieldCheck, Clock, Monitor, CreditCard, MessageSquare, AlertCircle, ChevronRight, Star } from 'lucide-react';
+import { ShieldCheck, Clock, Monitor, CreditCard, MessageSquare, AlertCircle, ChevronRight, Star, ShoppingCart, Zap, Minus, Plus, Info } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export function Offer() {
@@ -14,8 +14,7 @@ export function Offer() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('description');
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     const fetchListing = async () => {
@@ -40,22 +39,24 @@ export function Offer() {
       navigate('/login');
       return;
     }
-    navigate(`/checkout/${listing.id}`);
+    navigate(`/checkout/${listing.id}?qty=${quantity}`);
   };
 
-  const handleContactSeller = async () => {
+  const handleContactSupport = async () => {
     if (!user) {
       navigate('/login');
       return;
     }
-    if (user.uid === listing.sellerId) {
+    // For a single-seller store, we can direct to a support chat or a specific admin UID
+    const adminUid = 'ywskXjtxYJVD5xSU5wSNcpaWnXZ2'; // From App.tsx admin check
+    if (user.uid === adminUid) {
       return;
     }
     try {
       const chatRef = await addDoc(collection(db, 'chats'), {
         listingId: listing.id,
         buyerId: user.uid,
-        sellerId: listing.sellerId,
+        sellerId: adminUid,
         createdAt: serverTimestamp(),
       });
       navigate(`/chat/${chatRef.id}`);
@@ -85,226 +86,170 @@ export function Offer() {
     ? listing.images.filter((img: string) => img && img.trim() !== '')
     : [`https://picsum.photos/seed/${(listing?.game || 'game').replace(/\s+/g, '')}/800/400`];
 
+  const subtotal = listing.price * quantity;
+  const discount = quantity >= 3 ? subtotal * 0.1 : 0;
+  const total = subtotal - discount;
+
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen bg-[#050505] text-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden"
     >
-      <div className="flex items-center text-sm text-gray-400 mb-8 font-medium">
-        <Link to="/" className="hover:text-white transition-colors flex items-center gap-1">
-          Back
-        </Link>
-        <ChevronRight className="h-4 w-4 mx-2 opacity-50" />
-        <span className="hover:text-white transition-colors cursor-pointer">{listing.game}</span>
-        <ChevronRight className="h-4 w-4 mx-2 opacity-50" />
-        <span className="text-gray-200 truncate max-w-[250px]">{listing.title}</span>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* Left Column - Details */}
-        <div className="lg:col-span-2 space-y-10">
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-            <div className="relative group">
-              <div className="h-72 sm:h-96 bg-gray-900 relative">
-                <img 
-                  src={images[currentImageIndex]} 
-                  alt={listing.game}
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-                <div className="absolute bottom-6 left-6 right-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="h-10 w-10 bg-violet-600 rounded-lg flex items-center justify-center text-xl font-bold text-white">
-                      {listing.game.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{listing.game}</span>
-                      <h1 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight drop-shadow-lg">{listing.title}</h1>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Image Thumbnails */}
-              {images.length > 1 && (
-                <div className="absolute bottom-4 right-4 flex gap-2">
-                  {images.map((_, idx) => (
-                    <button 
-                      key={idx}
-                      onClick={() => setCurrentImageIndex(idx)}
-                      className={`w-2 h-2 rounded-full transition-all ${currentImageIndex === idx ? 'bg-violet-500 w-4' : 'bg-white/30 hover:bg-white/50'}`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Tabs */}
-            <div className="border-b border-white/10 flex px-8">
-              {['description', 'account details', 'reviews (0)'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`py-6 px-4 text-sm font-bold uppercase tracking-widest transition-all relative ${
-                    activeTab === tab ? 'text-white' : 'text-gray-500 hover:text-gray-300'
-                  }`}
-                >
-                  {tab}
-                  {activeTab === tab && (
-                    <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-violet-500" />
-                  )}
-                </button>
-              ))}
-            </div>
-
-            <div className="p-8 min-h-[300px]">
-              {activeTab === 'description' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="prose prose-invert max-w-none text-gray-300 leading-relaxed text-lg">
-                  <p className="whitespace-pre-wrap">{listing.description}</p>
-                </motion.div>
-              )}
-              {activeTab === 'account details' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Account Level</h4>
-                      <p className="text-xl font-bold text-white">{listing.level || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Rank</h4>
-                      <p className="text-xl font-bold text-white">{listing.rank || 'N/A'}</p>
-                    </div>
-                  </div>
-                  <div className="space-y-6">
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Region</h4>
-                      <p className="text-xl font-bold text-white">{listing.region || 'Global'}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Main Characters/Skins</h4>
-                      <p className="text-xl font-bold text-white">{listing.skins || 'N/A'}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-              {activeTab === 'reviews (0)' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-12 text-gray-500">
-                  <Star className="h-12 w-12 mb-4 opacity-20" />
-                  <p className="text-lg font-medium">No reviews yet for this listing</p>
-                </motion.div>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8 shadow-xl">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-              <div className="flex items-center gap-5">
-                <div className="h-16 w-16 rounded-full bg-white/10 flex items-center justify-center overflow-hidden border-2 border-white/20 shadow-lg">
-                  <img 
-                    src={`https://ui-avatars.com/api/?name=${listing.sellerUsername || listing.sellerName}&background=random`} 
-                    alt={listing.sellerName} 
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-                <div>
-                  <Link to={`/seller/${listing.sellerId}`} className="text-xl font-bold text-white hover:text-violet-400 transition-colors">
-                    @{listing.sellerUsername || listing.sellerName}
-                  </Link>
-                  <div className="flex items-center text-sm text-gray-400 mt-2 font-medium">
-                    <span className="text-gray-500">No reviews yet</span>
-                    <span className="mx-3 opacity-50">•</span>
-                    <span className="text-gray-500">0 sales</span>
-                  </div>
-                </div>
-              </div>
-              <button 
-                onClick={handleContactSeller}
-                className="w-full sm:w-auto bg-white/10 hover:bg-white/20 border border-white/20 text-white px-6 py-3 rounded-full font-semibold transition-all flex items-center justify-center gap-2 shadow-lg"
-              >
-                <MessageSquare className="h-5 w-5" />
-                <span>Contact Seller</span>
-              </button>
-            </div>
-          </div>
+      {/* Grid Background Effect */}
+      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" 
+           style={{ backgroundImage: 'radial-gradient(#262626 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+      
+      <div className="max-w-7xl mx-auto relative z-10">
+        <div className="flex items-center text-sm text-gray-500 mb-12 font-medium">
+          <Link to="/" className="hover:text-red-500 transition-colors">Home</Link>
+          <ChevronRight className="h-4 w-4 mx-2 opacity-30" />
+          <Link to="/marketplace" className="hover:text-red-500 transition-colors">Marketplace</Link>
+          <ChevronRight className="h-4 w-4 mx-2 opacity-30" />
+          <span className="text-gray-300 truncate">{listing.title}</span>
         </div>
 
-        {/* Right Column - Checkout */}
-        <div className="space-y-8">
-          <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8 sticky top-28 shadow-2xl">
-            <div className="text-5xl font-black text-white mb-8 tracking-tight">
-              ${listing.price.toFixed(2)}
-            </div>
-            
-            <div className="space-y-5 mb-10">
-              <div className="flex justify-between items-center py-4 border-b border-white/10">
-                <div className="flex items-center text-gray-400 gap-3 font-medium">
-                  <Monitor className="h-5 w-5 text-violet-400" />
-                  <span>Device</span>
-                </div>
-                <span className="font-bold text-white">{listing.device}</span>
-              </div>
-              <div className="flex justify-between items-center py-4 border-b border-white/10">
-                <div className="flex items-center text-gray-400 gap-3 font-medium">
-                  <Clock className="h-5 w-5 text-violet-400" />
-                  <span>Delivery time</span>
-                </div>
-                <span className="font-bold text-white">{listing.deliveryTime}</span>
-              </div>
-              <div className="flex justify-between items-center py-4 border-b border-white/10">
-                <div className="flex items-center text-gray-400 gap-3 font-medium">
-                  <ShieldCheck className="h-5 w-5 text-violet-400" />
-                  <span>Warranty</span>
-                </div>
-                <span className="font-bold text-emerald-400">14 Days Free</span>
-              </div>
-            </div>
-
-            <button 
-              onClick={handleBuyNow}
-              className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-center font-extrabold py-5 rounded-full transition-all text-xl mb-6 shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:shadow-[0_0_30px_rgba(139,92,246,0.6)] transform hover:-translate-y-1"
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          {/* Left Column */}
+          <div className="lg:col-span-7 space-y-8">
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="relative rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl aspect-video"
             >
-              Buy Now — ${listing.price.toFixed(2)}
-            </button>
+              <img 
+                src={images[0]} 
+                alt={listing.title}
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+            </motion.div>
 
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-5 mb-8">
-              <div className="flex items-start gap-4">
-                <ShieldCheck className="h-7 w-7 text-emerald-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-bold text-emerald-400 text-base">Money-back Guarantee</h4>
-                  <p className="text-sm text-emerald-400/80 mt-1.5 leading-relaxed">Protected by TradeShield. Funds are held in escrow until delivery is confirmed.</p>
+            <div className="bg-[#0A0A0A]/80 backdrop-blur-xl border border-white/5 rounded-[2rem] p-10 space-y-12 shadow-2xl">
+              <section>
+                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                  Requirements:
+                </h3>
+                <div className="border-l-2 border-red-500 pl-6 py-1 space-y-2">
+                  <p className="text-gray-400">For a showcase of this product take a look here Add Only Description And</p>
+                </div>
+              </section>
+
+              <div className="h-px bg-white/5 w-full"></div>
+
+              <section>
+                <h3 className="text-xl font-bold text-white mb-6">Features</h3>
+                <div className="border-l-2 border-red-500 pl-6 py-1 space-y-4">
+                  {listing.description.split('\n').map((line: string, i: number) => (
+                    <p key={i} className="text-gray-400">{line}</p>
+                  ))}
+                  {!listing.description && (
+                    <>
+                      <p className="text-gray-400">Enable Aimbot</p>
+                      <p className="text-gray-400">pSilent</p>
+                      <p className="text-gray-400">Prediction</p>
+                      <p className="text-gray-400">Bow Prediction</p>
+                      <p className="text-gray-400">Bola Prediction</p>
+                    </>
+                  )}
+                </div>
+              </section>
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="space-y-4">
+              <h1 className="text-5xl font-black text-white tracking-tight leading-tight">
+                {listing.title}
+              </h1>
+              
+              <div className="flex items-center gap-3">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold uppercase tracking-widest">
+                  <Zap className="h-3.5 w-3.5 fill-current" />
+                  Instant Delivery
                 </div>
               </div>
             </div>
 
-            <div className="space-y-5">
-              <div>
-                <h4 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Fast Checkout Options</h4>
-                <div className="flex gap-3">
-                  <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex items-center justify-center flex-1 shadow-inner">
-                    <span className="text-xs font-bold text-gray-400">Apple Pay · Google Pay · Ziina</span>
+            <div className="bg-[#0A0A0A]/80 backdrop-blur-xl border border-white/5 rounded-[2rem] p-8 shadow-2xl space-y-8">
+              <div className="flex items-center justify-between">
+                <div className="text-4xl font-black text-white">
+                  ${listing.price.toFixed(2)}
+                </div>
+                <div className="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-widest">
+                  In Stock
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Quantity</label>
+                <div className="flex items-center bg-[#050505] border border-white/5 rounded-2xl overflow-hidden h-14">
+                  <button 
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="flex-1 h-full flex items-center justify-center hover:bg-white/5 transition-colors text-gray-400"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <div className="w-20 text-center font-bold text-xl text-white">
+                    {quantity}
                   </div>
+                  <button 
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="flex-1 h-full flex items-center justify-center hover:bg-white/5 transition-colors text-gray-400"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
-              <div>
-                <div className="flex items-center gap-2 text-sm text-gray-400 mt-6 pt-6 border-t border-white/10 font-medium">
-                  <MessageSquare className="h-4 w-4 text-violet-400" />
-                  <span>24/7 Live Support</span>
+
+              <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-emerald-500/80 text-sm font-bold text-center">
+                {quantity < 3 ? `Buy ${3 - quantity} more to get a 10% discount.` : '10% discount applied!'}
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-white/5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 font-medium">Default</span>
+                  <span className="text-white font-bold">${listing.price.toFixed(2)}</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-1.5">We're always here to help</p>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 font-medium">Quantity</span>
+                  <span className="text-white font-bold">{quantity}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500 font-medium">Subtotal</span>
+                  <span className="text-white font-bold">${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xl pt-4 border-t border-white/5">
+                  <span className="text-white font-black uppercase tracking-widest">Total</span>
+                  <span className="text-white font-black">${total.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 pt-4">
+                <button 
+                  onClick={handleBuyNow}
+                  className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-5 rounded-2xl transition-all shadow-[0_0_30px_rgba(220,38,38,0.3)] flex items-center justify-center gap-3 text-lg"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  Add to Cart
+                </button>
+                <button 
+                  onClick={handleBuyNow}
+                  className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black py-5 rounded-2xl transition-all flex items-center justify-center gap-3 text-lg"
+                >
+                  <Zap className="h-5 w-5 text-red-500" />
+                  Buy Now
+                </button>
               </div>
             </div>
 
-            <div className="mt-8 pt-8 border-t border-white/10 grid grid-cols-2 gap-4 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-              <div className="flex flex-col gap-1">
-                <span>Mar 31, 2026</span>
-              </div>
-              <div className="flex flex-col gap-1 text-right">
-                <span>Funds held in escrow</span>
-                <span>Full refund if not as described</span>
+            <div className="bg-red-500/5 border border-red-500/10 rounded-[2rem] p-6 flex items-start gap-4">
+              <ShieldCheck className="h-6 w-6 text-red-500 mt-0.5" />
+              <div>
+                <h4 className="font-bold text-white text-sm">TradeShield Protected</h4>
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">Your funds are held in escrow until delivery is confirmed. 24/7 support available.</p>
               </div>
             </div>
           </div>

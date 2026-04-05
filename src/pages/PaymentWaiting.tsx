@@ -8,8 +8,13 @@ import { Loader2, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 export function PaymentWaiting() {
   const { purchaseId } = useParams<{ purchaseId: string }>();
   const [status, setStatus] = useState<string>('awaiting_payment');
+  const statusRef = React.useRef(status);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   useEffect(() => {
     if (!purchaseId) return;
@@ -20,9 +25,9 @@ export function PaymentWaiting() {
         setStatus(data.status);
         
         if (data.status === 'Pending Delivery') {
-          // Success! Redirect to chat after a short delay
+          // Success! Redirect to account details after a short delay
           setTimeout(() => {
-            navigate(`/chat/${data.listingId}`);
+            navigate(`/account-details/${purchaseId}`);
           }, 2000);
         }
       } else {
@@ -33,57 +38,100 @@ export function PaymentWaiting() {
       setError('Failed to track payment status.');
     });
 
-    return () => unsubscribe();
+    // Manual poll as backup
+    const pollInterval = setInterval(async () => {
+      if (statusRef.current === 'awaiting_payment') {
+        try {
+          const response = await fetch(`/api/check-payment-status/${purchaseId}`);
+          const data = await response.json();
+          if (data.status === 'Pending Delivery') {
+            setStatus('Pending Delivery');
+          }
+        } catch (err) {
+          console.error("Poll error:", err);
+        }
+      }
+    }, 5000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(pollInterval);
+    };
   }, [purchaseId, navigate]);
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-12 text-center shadow-2xl">
+    <div className="min-h-screen bg-[#050505] text-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden flex items-center justify-center">
+      {/* Grid Background Effect */}
+      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" 
+           style={{ backgroundImage: 'radial-gradient(#262626 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+
+      <div className="max-w-md w-full bg-[#0A0A0A]/80 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-12 text-center shadow-2xl relative z-10">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="mb-8"
+          className="mb-10"
         >
           {status === 'awaiting_payment' ? (
-            <div className="relative">
-              <Loader2 className="h-24 w-24 text-violet-500 animate-spin mx-auto" />
-              <Clock className="h-8 w-8 text-violet-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+            <div className="relative inline-block">
+              <Loader2 className="h-28 w-28 text-red-600 animate-spin mx-auto" />
+              <Clock className="h-10 w-10 text-red-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
             </div>
           ) : status === 'Pending Delivery' ? (
-            <div className="h-24 w-24 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 className="h-12 w-12 text-emerald-400" />
+            <div className="h-28 w-28 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle2 className="h-14 w-14 text-emerald-500" />
             </div>
           ) : (
-            <div className="h-24 w-24 bg-red-500/20 rounded-full flex items-center justify-center mx-auto">
-              <AlertCircle className="h-12 w-12 text-red-400" />
+            <div className="h-28 w-28 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center mx-auto">
+              <AlertCircle className="h-14 w-14 text-red-500" />
             </div>
           )}
         </motion.div>
 
-        <h2 className="text-3xl font-black text-white mb-4">
+        <h2 className="text-4xl font-black text-white mb-6 tracking-tight">
           {status === 'awaiting_payment' ? 'Waiting for Payment...' : 
            status === 'Pending Delivery' ? 'Payment Confirmed!' : 
            'Payment Failed'}
         </h2>
 
-        <p className="text-gray-400 mb-8 leading-relaxed">
+        <p className="text-gray-500 mb-10 leading-relaxed font-medium text-lg">
           {status === 'awaiting_payment' ? 
             "We're waiting for Ziina to confirm your payment. This usually takes a few seconds. Please don't close this page." : 
            status === 'Pending Delivery' ? 
-            "Your payment was successful! Redirecting you to the secure chat..." : 
+            "Your payment was successful! Redirecting you to your account details..." : 
             "There was an issue with your payment. Please contact support if this persists."}
         </p>
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm mb-6">
+          <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-6 py-4 rounded-2xl text-sm mb-8 font-bold">
             {error}
           </div>
         )}
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-widest">
-            <div className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-pulse" />
-            Auto-checking status every 3 seconds
+        <div className="space-y-6">
+          {status === 'awaiting_payment' && (
+            <div className="space-y-4">
+              <button
+                onClick={async () => {
+                  try {
+                    const response = await fetch(`/api/check-payment-status/${purchaseId}`);
+                    const data = await response.json();
+                    if (data.status === 'Pending Delivery') {
+                      setStatus('Pending Delivery');
+                    }
+                  } catch (err) {
+                    console.error("Manual check error:", err);
+                  }
+                }}
+                className="w-full bg-white/5 hover:bg-white/10 text-white font-black py-4 rounded-2xl transition-all border border-white/10 text-sm tracking-widest uppercase"
+              >
+                Check Status Manually
+              </button>
+            </div>
+          )}
+          
+          <div className="flex items-center justify-center gap-3 text-[10px] font-black text-gray-600 uppercase tracking-[0.2em]">
+            <div className="h-2 w-2 rounded-full bg-red-600 animate-pulse" />
+            Auto-checking status every 5 seconds
           </div>
         </div>
       </div>

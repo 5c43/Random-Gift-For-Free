@@ -38,9 +38,14 @@
         "skins": { "type": "string" },
         "images": { "type": "array", "items": { "type": "string" } },
         "status": { "type": "string", "enum": ["active", "sold", "pending"] },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "deliverableType": { "type": "string", "enum": ["serials", "service", "dynamic"] },
+        "stockCount": { "type": "number" },
+        "serials": { "type": "array", "items": { "type": "string" } },
+        "instructions": { "type": "string" },
+        "webhookUrl": { "type": "string" }
       },
-      "required": ["sellerId", "sellerName", "title", "description", "price", "game", "device", "deliveryTime", "status", "createdAt"]
+      "required": ["sellerId", "sellerName", "title", "description", "price", "game", "device", "deliveryTime", "status", "createdAt", "deliverableType"]
     },
     "Purchase": {
       "title": "Purchase",
@@ -51,11 +56,13 @@
         "buyerId": { "type": "string" },
         "sellerId": { "type": "string" },
         "price": { "type": "number" },
+        "quantity": { "type": "number" },
         "receiptEmail": { "type": "string" },
         "status": { "type": "string", "enum": ["awaiting_payment", "Pending Delivery", "completed", "refunded"] },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "deliveredContent": { "type": "string" }
       },
-      "required": ["listingId", "buyerId", "sellerId", "price", "receiptEmail", "status", "createdAt"]
+      "required": ["listingId", "buyerId", "sellerId", "price", "quantity", "receiptEmail", "status", "createdAt"]
     },
     "Chat": {
       "title": "Chat",

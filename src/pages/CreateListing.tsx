@@ -4,7 +4,7 @@ import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/fi
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
-import { ShieldCheck, Upload, DollarSign, List, Info, ChevronDown, CheckCircle2, AlertCircle, GripVertical, Trash2, Plus } from 'lucide-react';
+import { ShieldCheck, Upload, DollarSign, List, Info, ChevronDown, CheckCircle2, AlertCircle, GripVertical, Trash2, Plus, Zap } from 'lucide-react';
 import { motion, Reorder } from 'motion/react';
 
 export function CreateListing() {
@@ -15,12 +15,17 @@ export function CreateListing() {
     title: '',
     description: '',
     price: '',
-    game: '',
+    game: 'Fortnite',
     category: 'Accounts',
     level: '',
     rank: '',
     skins: '',
     images: [] as string[],
+    deliverableType: 'service' as 'serials' | 'service' | 'dynamic',
+    stockCount: '1',
+    serials: '',
+    instructions: '',
+    webhookUrl: '',
   });
 
   const [newImageUrl, setNewImageUrl] = useState('');
@@ -70,6 +75,13 @@ export function CreateListing() {
         rank: formData.rank,
         skins: formData.skins,
         images: formData.images.filter(img => img.trim() !== ''),
+        deliverableType: formData.deliverableType,
+        stockCount: formData.deliverableType === 'serials' 
+          ? formData.serials.split('\n').filter(s => s.trim()).length 
+          : (formData.stockCount === 'infinite' ? 999999 : parseInt(formData.stockCount)),
+        serials: formData.deliverableType === 'serials' ? formData.serials.split('\n').filter(s => s.trim()) : [],
+        instructions: formData.instructions,
+        webhookUrl: formData.webhookUrl,
         status: 'active',
         createdAt: serverTimestamp(),
       });
@@ -85,10 +97,10 @@ export function CreateListing() {
     return (
       <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center p-4">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center bg-[#161616] border border-[#262626] p-12 rounded-3xl shadow-2xl max-w-md w-full">
-          <AlertCircle className="h-16 w-16 text-violet-500 mx-auto mb-6" />
+          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-6" />
           <h2 className="text-3xl font-extrabold text-white mb-4">Access Denied</h2>
           <p className="text-gray-400 mb-8">Please log in to create a listing on the marketplace.</p>
-          <button onClick={() => navigate('/login')} className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-violet-500/20">
+          <button onClick={() => navigate('/login')} className="w-full bg-red-600 hover:bg-red-500 text-white py-4 rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20">
             Log In Now
           </button>
         </motion.div>
@@ -99,8 +111,8 @@ export function CreateListing() {
   return (
     <div className="min-h-screen bg-[#0B0B0B] text-white py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background Glow */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-violet-600/5 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-fuchsia-600/5 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-600/5 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-red-600/5 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="max-w-4xl mx-auto relative z-10">
         {/* Header Section */}
@@ -139,8 +151,8 @@ export function CreateListing() {
             className="bg-[#161616] border border-[#262626] rounded-3xl p-8 shadow-xl backdrop-blur-md"
           >
             <div className="flex items-center gap-3 mb-8">
-              <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
-                <Info className="h-5 w-5 text-violet-400" />
+              <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                <Info className="h-5 w-5 text-red-400" />
               </div>
               <h2 className="text-xl font-bold text-white">Basic Information</h2>
             </div>
@@ -153,7 +165,7 @@ export function CreateListing() {
                   type="text" 
                   value={formData.title} 
                   onChange={e => setFormData({...formData, title: e.target.value})} 
-                  className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all placeholder:text-gray-600" 
+                  className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-600" 
                   placeholder="e.g. Fortnite Account - 200+ Skins, Level 500" 
                 />
               </div>
@@ -165,7 +177,7 @@ export function CreateListing() {
                   rows={5} 
                   value={formData.description} 
                   onChange={e => setFormData({...formData, description: e.target.value})} 
-                  className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all placeholder:text-gray-600 resize-none" 
+                  className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-600 resize-none" 
                   placeholder="Describe what's included in detail..." 
                 />
               </div>
@@ -178,7 +190,7 @@ export function CreateListing() {
                       required 
                       value={formData.game} 
                       onChange={e => setFormData({...formData, game: e.target.value})} 
-                      className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]/50 transition-all appearance-none"
+                      className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all appearance-none"
                     >
                       <option value="" disabled>Select game</option>
                       {games.map(game => (
@@ -195,7 +207,7 @@ export function CreateListing() {
                       required 
                       value={formData.category} 
                       onChange={e => setFormData({...formData, category: e.target.value})} 
-                      className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]/50 transition-all appearance-none"
+                      className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all appearance-none"
                     >
                       {categories.map(cat => (
                         <option key={cat} value={cat} className="bg-[#161616]">{cat}</option>
@@ -208,7 +220,120 @@ export function CreateListing() {
             </div>
           </motion.div>
 
-          {/* Section 2: Screenshot / Image */}
+          {/* Section 2: Deliverables & Stock */}
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.25 }}
+            className="bg-[#161616] border border-[#262626] rounded-3xl p-8 shadow-xl backdrop-blur-md"
+          >
+            <div className="flex items-center gap-3 mb-8">
+              <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                <Zap className="h-5 w-5 text-red-400" />
+              </div>
+              <h2 className="text-xl font-bold text-white">Deliverables & Stock</h2>
+            </div>
+
+            <div className="space-y-8">
+              <div>
+                <label className="block text-sm font-bold text-gray-400 mb-4 uppercase tracking-widest">Deliverables Type</label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    { id: 'serials', title: 'Serials', desc: 'Automatically delivers serial keys. Stock count is based on the number of entered serials.' },
+                    { id: 'service', title: 'Service', desc: 'Automatically delivers ONLY instructions. Stock count is entered manually and can be infinite.' },
+                    { id: 'dynamic', title: 'Dynamic', desc: 'Automatically delivers content from a specified webhook URL. Stock count is entered manually and can be infinite.' }
+                  ].map((type) => (
+                    <button
+                      key={type.id}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, deliverableType: type.id as any })}
+                      className={`text-left p-5 rounded-2xl border transition-all ${
+                        formData.deliverableType === type.id 
+                          ? 'bg-red-500/10 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
+                          : 'bg-[#1A1A1A] border-[#262626] hover:border-gray-700'
+                      }`}
+                    >
+                      <h3 className={`font-bold mb-1 ${formData.deliverableType === type.id ? 'text-red-400' : 'text-white'}`}>{type.title}</h3>
+                      <p className="text-[10px] text-gray-500 leading-relaxed">{type.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {formData.deliverableType === 'serials' && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                  <label className="block text-sm font-bold text-gray-400 mb-3 uppercase tracking-widest">Serials (One per line)</label>
+                  <textarea 
+                    required 
+                    rows={6} 
+                    value={formData.serials} 
+                    onChange={e => setFormData({...formData, serials: e.target.value})} 
+                    className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-600 resize-none font-mono text-sm" 
+                    placeholder="Enter serial keys here..." 
+                  />
+                  <p className="text-[10px] text-gray-500 mt-2 font-bold uppercase tracking-widest">
+                    Total Stock: {formData.serials.split('\n').filter(s => s.trim()).length}
+                  </p>
+                </motion.div>
+              )}
+
+              {formData.deliverableType === 'service' && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-400 mb-3 uppercase tracking-widest">Instructions</label>
+                    <textarea 
+                      required 
+                      rows={4} 
+                      value={formData.instructions} 
+                      onChange={e => setFormData({...formData, instructions: e.target.value})} 
+                      className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-600 resize-none text-sm" 
+                      placeholder="Enter delivery instructions for the buyer..." 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-400 mb-3 uppercase tracking-widest">Stock Count</label>
+                    <input 
+                      required 
+                      type="text" 
+                      value={formData.stockCount} 
+                      onChange={e => setFormData({...formData, stockCount: e.target.value})} 
+                      className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-600" 
+                      placeholder="Enter number or 'infinite'" 
+                    />
+                  </div>
+                </motion.div>
+              )}
+
+              {formData.deliverableType === 'dynamic' && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-400 mb-3 uppercase tracking-widest">Webhook URL</label>
+                    <input 
+                      required 
+                      type="url" 
+                      value={formData.webhookUrl} 
+                      onChange={e => setFormData({...formData, webhookUrl: e.target.value})} 
+                      className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-600" 
+                      placeholder="https://your-api.com/deliver" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-400 mb-3 uppercase tracking-widest">Stock Count</label>
+                    <input 
+                      required 
+                      type="text" 
+                      value={formData.stockCount} 
+                      onChange={e => setFormData({...formData, stockCount: e.target.value})} 
+                      className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-600" 
+                      placeholder="Enter number or 'infinite'" 
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Section 3: Screenshot / Image */}
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -303,8 +428,8 @@ export function CreateListing() {
               className="bg-[#161616] border border-[#262626] rounded-3xl p-8 shadow-xl backdrop-blur-md"
             >
               <div className="flex items-center gap-3 mb-8">
-                <div className="h-10 w-10 rounded-xl bg-[#10B981]/10 flex items-center justify-center">
-                  <DollarSign className="h-5 w-5 text-[#10B981]" />
+                <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-red-400" />
                 </div>
                 <h2 className="text-xl font-bold text-white">Pricing</h2>
               </div>
@@ -318,7 +443,7 @@ export function CreateListing() {
                     step="0.01" 
                     value={formData.price} 
                     onChange={e => setFormData({...formData, price: e.target.value})} 
-                    className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-[#10B981]/50 transition-all placeholder:text-gray-600 text-2xl font-extrabold text-[#10B981]" 
+                    className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-600 text-2xl font-extrabold text-red-500" 
                     placeholder="0.00" 
                   />
                   {formData.price && parseFloat(formData.price) > 0 && (
@@ -332,7 +457,7 @@ export function CreateListing() {
                         <span>-${(parseFloat(formData.price) * 0.05).toFixed(2)}</span>
                       </div>
                       <div className="h-px bg-white/5 my-2"></div>
-                      <div className="flex justify-between text-sm font-black uppercase tracking-widest text-emerald-400">
+                      <div className="flex justify-between text-sm font-black uppercase tracking-widest text-red-400">
                         <span>You Receive</span>
                         <span>${(parseFloat(formData.price) * 0.95).toFixed(2)}</span>
                       </div>
@@ -399,7 +524,7 @@ export function CreateListing() {
             <button 
               disabled={loading} 
               type="submit" 
-              className="w-full max-w-md mx-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-extrabold py-5 rounded-2xl transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] transform hover:-translate-y-1 disabled:opacity-50 text-xl"
+              className="w-full max-w-md mx-auto bg-red-600 hover:bg-red-500 text-white font-extrabold py-5 rounded-2xl transition-all shadow-[0_0_20px_rgba(239,68,68,0.3)] hover:shadow-[0_0_30px_rgba(239,68,68,0.5)] transform hover:-translate-y-1 disabled:opacity-50 text-xl"
             >
               {loading ? 'Creating Listing...' : 'Create Listing'}
             </button>

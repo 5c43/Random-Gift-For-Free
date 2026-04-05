@@ -27,42 +27,42 @@ export function Marketplace() {
   const mockListings = [
     {
       id: 'mock1',
-      game: 'League of Legends',
-      title: 'League of Legends Diamond Account - 200+ Skins',
-      details: 'Lvl 380 • Diamond 2 • 200+ skins',
-      price: 189.99,
-      sellerName: 'LeagueMaster',
-      sellerUsername: 'leaguemaster',
+      game: 'Fortnite',
+      title: 'Fortnite OG Account - Renegade Raider & Pink Ghoul',
+      details: 'Lvl 500 • OG • 300+ skins',
+      price: 1299.99,
+      sellerName: 'FortniteKing',
+      sellerUsername: 'fortniteking',
       sellerId: 'mock-seller-1',
-      views: 1240,
+      views: 5420,
       category: 'Accounts',
       status: 'active',
       createdAt: new Date(Date.now() - 86400000)
     },
     {
       id: 'mock2',
-      game: 'Roblox',
-      title: 'Roblox Account - 50K Robux + Limited Items',
-      details: 'Lvl N/A • Premium • 50+ limiteds',
-      price: 149.99,
-      sellerName: 'RobloxTrader',
-      sellerUsername: 'robloxtrader',
+      game: 'Fortnite',
+      title: 'Fortnite Account - 100+ Skins (Galaxy & Ikonik)',
+      details: 'Lvl 250 • Rare • 120+ skins',
+      price: 249.99,
+      sellerName: 'SkinsTrader',
+      sellerUsername: 'skinstrader',
       sellerId: 'mock-seller-2',
-      views: 856,
+      views: 1856,
       category: 'Accounts',
       status: 'active',
       createdAt: new Date(Date.now() - 172800000)
     },
     {
       id: 'mock3',
-      game: 'Apex Legends',
-      title: 'Apex Legends Predator Account - Heirloom Set',
-      details: 'Lvl 500 • Predator • 100+ legendaries',
-      price: 349.99,
-      sellerName: 'ApexPred',
-      sellerUsername: 'apexpred',
+      game: 'Fortnite',
+      title: 'Fortnite Account - Black Knight & Sparkle Specialist',
+      details: 'Lvl 400 • OG • 200+ skins',
+      price: 449.99,
+      sellerName: 'OGMaster',
+      sellerUsername: 'ogmaster',
       sellerId: 'mock-seller-3',
-      views: 2100,
+      views: 3100,
       featured: true,
       category: 'Accounts',
       status: 'active',
@@ -122,12 +122,16 @@ export function Marketplace() {
     });
 
   return (
-    <div className="min-h-screen bg-[#0B0B0B] text-white py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#050505] text-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Grid Background Effect */}
+      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" 
+           style={{ backgroundImage: 'radial-gradient(#262626 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
         {/* Top Section */}
         <div className="mb-12">
-          <h1 className="text-4xl font-extrabold mb-2">Marketplace</h1>
-          <p className="text-gray-400">Browse {filteredListings.length} listings</p>
+          <h1 className="text-4xl font-extrabold mb-2">Our Products</h1>
+          <p className="text-gray-400">Browse {filteredListings.length} premium gaming assets</p>
         </div>
 
         {/* Search & Filters Row */}
@@ -138,10 +142,10 @@ export function Marketplace() {
             </div>
             <input
               type="text"
-              placeholder="Search accounts, items, games..."
+              placeholder="Search accounts, skins, v-bucks..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-[#161616] border border-[#262626] rounded-2xl pl-14 pr-4 py-4 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all shadow-2xl"
+              className="w-full bg-[#161616] border border-[#262626] rounded-2xl pl-14 pr-4 py-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all shadow-2xl"
             />
           </div>
           <div className="flex flex-wrap gap-3">
@@ -164,7 +168,7 @@ export function Marketplace() {
                           setSelectedGame(game);
                           setOpenDropdown(null);
                         }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${selectedGame === game ? 'bg-violet-500 text-white' : 'hover:bg-[#10B981] hover:text-black'}`}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${selectedGame === game ? 'bg-red-500 text-white' : 'hover:bg-red-500/10 hover:text-red-400'}`}
                       >
                         {game}
                       </button>
@@ -193,7 +197,7 @@ export function Marketplace() {
                           setSelectedCategory(cat);
                           setOpenDropdown(null);
                         }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${selectedCategory === cat ? 'bg-violet-500 text-white' : 'hover:bg-[#10B981] hover:text-black'}`}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${selectedCategory === cat ? 'bg-red-500 text-white' : 'hover:bg-red-500/10 hover:text-red-400'}`}
                       >
                         {cat}
                       </button>
@@ -225,7 +229,7 @@ export function Marketplace() {
                           setSortBy(option);
                           setOpenDropdown(null);
                         }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${sortBy === option ? 'bg-violet-500 text-white' : 'hover:bg-[#10B981] hover:text-black'}`}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${sortBy === option ? 'bg-red-500 text-white' : 'hover:bg-red-500/10 hover:text-red-400'}`}
                       >
                         {option}
                       </button>
@@ -240,7 +244,7 @@ export function Marketplace() {
         {/* Product Cards Grid */}
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-500"></div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -251,11 +255,11 @@ export function Marketplace() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ y: -8, scale: 1.02 }}
-                className="group bg-[#161616] border border-[#262626] rounded-3xl overflow-hidden hover:border-violet-500/50 transition-all shadow-xl hover:shadow-violet-500/10"
+                className="group bg-[#161616] border border-[#262626] rounded-3xl overflow-hidden hover:border-red-500/50 transition-all shadow-xl hover:shadow-red-500/10"
               >
                 <Link to={`/offer/${listing.id}`}>
                   {/* Top Area */}
-                  <div className="relative h-48 bg-gradient-to-br from-violet-900/20 to-fuchsia-900/20 overflow-hidden">
+                  <div className="relative h-48 bg-gradient-to-br from-red-900/20 to-red-950/20 overflow-hidden">
                     {listing.images && listing.images[0] ? (
                       <img 
                         src={listing.images[0]} 
@@ -289,7 +293,7 @@ export function Marketplace() {
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-white mb-2 line-clamp-2 group-hover:text-violet-400 transition-colors">
+                    <h3 className="text-lg font-bold text-white mb-2 line-clamp-2 group-hover:text-red-400 transition-colors">
                       {listing.title}
                     </h3>
                     
@@ -303,13 +307,14 @@ export function Marketplace() {
                         <p className="text-2xl font-extrabold text-[#10B981]">${listing.price.toFixed(2)}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Seller</p>
-                        <p className="text-sm font-bold text-violet-400">@{listing.sellerUsername || listing.sellerName}</p>
+                        <span className="bg-red-500/10 text-red-400 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-red-500/20 uppercase tracking-wider">
+                          Instant Delivery
+                        </span>
                       </div>
                     </div>
 
                     <div className="mt-6">
-                      <div className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-bold py-3.5 rounded-2xl transition-all shadow-lg shadow-violet-500/20 flex items-center justify-center gap-2 group-hover:shadow-violet-500/40">
+                      <div className="w-full bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-bold py-3.5 rounded-2xl transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 group-hover:shadow-red-500/40">
                         View Details
                         <motion.span animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
                           →

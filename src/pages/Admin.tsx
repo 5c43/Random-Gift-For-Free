@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
-import { ShieldAlert, Trash2, CheckCircle, XCircle, Users, ShoppingBag, Clock, ExternalLink, MessageSquare, User, AlertCircle, DollarSign } from 'lucide-react';
+import { ShieldAlert, Trash2, CheckCircle, XCircle, Users, ShoppingBag, Clock, ExternalLink, MessageSquare, User, AlertCircle, DollarSign, TrendingUp, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
@@ -278,14 +279,30 @@ export function Admin() {
           <ShieldAlert className="h-12 w-12 text-violet-400" />
           <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">Admin Dashboard</h1>
         </div>
-        {user.uid === 'ywskXjtxYJVD5xSU5wSNcpaWnXZ2' && userData?.role !== 'admin' && (
-          <button 
-            onClick={() => handleUpdateRole(user.uid, 'admin')}
-            className="bg-violet-600 hover:bg-violet-500 text-white px-6 py-2 rounded-xl font-bold transition-all shadow-lg shadow-violet-500/20"
+        <div className="flex items-center gap-4">
+          <Link 
+            to="/admin/traffic"
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl font-bold transition-all border border-white/10"
           >
-            Activate Admin Role
-          </button>
-        )}
+            <TrendingUp className="h-4 w-4 text-red-500" />
+            Traffic
+          </Link>
+          <Link 
+            to="/admin/revenue"
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl font-bold transition-all border border-white/10"
+          >
+            <BarChart3 className="h-4 w-4 text-emerald-400" />
+            Revenue
+          </Link>
+          {user.uid === 'ywskXjtxYJVD5xSU5wSNcpaWnXZ2' && userData?.role !== 'admin' && (
+            <button 
+              onClick={() => handleUpdateRole(user.uid, 'admin')}
+              className="bg-violet-600 hover:bg-violet-500 text-white px-6 py-2 rounded-xl font-bold transition-all shadow-lg shadow-violet-500/20"
+            >
+              Activate Admin Role
+            </button>
+          )}
+        </div>
       </div>
 
       {loading ? (

@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './AuthContext';
 import { Home } from './pages/Home';
 import { Marketplace } from './pages/Marketplace';
+import { Reviews } from './pages/Reviews';
+import { Status } from './pages/Status';
 import { FreeAccounts } from './pages/FreeAccounts';
 import { CreateListing } from './pages/CreateListing';
 import { Offer } from './pages/Offer';
@@ -10,6 +12,8 @@ import { SellerProfile } from './pages/SellerProfile';
 import { SellerVerification } from './pages/SellerVerification';
 import { Chat } from './pages/Chat';
 import { Admin } from './pages/Admin';
+import { AdminTraffic } from './pages/AdminTraffic';
+import { AdminRevenue } from './pages/AdminRevenue';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Checkout } from './pages/Checkout';
@@ -19,8 +23,9 @@ import { Notifications } from './pages/Notifications';
 import { Support } from './pages/Support';
 import { TermsOfService } from './pages/TermsOfService';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
+import { AccountDetails } from './pages/AccountDetails';
 import { useLocation, Navigate } from 'react-router-dom';
-import { Bell, Gamepad2, MessageSquare, User, LogOut, Menu, ShieldCheck, LayoutDashboard, PlusCircle, Zap } from 'lucide-react';
+import { Bell, Gamepad2, User, LogOut, Menu, ShieldCheck, LayoutDashboard, PlusCircle, Zap } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 import { motion } from 'motion/react';
@@ -79,37 +84,31 @@ function Navbar() {
         <div className="flex justify-between h-20">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center gap-3">
-              <div className="h-10 w-10 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20">
+              <div className="h-10 w-10 bg-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/20">
                 <Gamepad2 className="h-6 w-6 text-white" />
               </div>
               <span className="font-display font-extrabold text-2xl tracking-tight text-white">GameVault</span>
             </Link>
           </div>
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/marketplace" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">Marketplace</Link>
-            <Link to="/free-accounts" className="text-sm font-medium text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-2">
+            <Link to="/marketplace" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">Products</Link>
+            <Link to="/reviews" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">Reviews</Link>
+            <Link to="/status" className="text-sm font-medium text-gray-300 hover:text-white transition-colors">Status</Link>
+            <Link to="/free-accounts" className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors flex items-center gap-2">
               <Zap className="h-4 w-4" /> Free Accounts
             </Link>
             {user ? (
               <>
-                <Link to="/chat" className="text-sm font-medium text-gray-300 hover:text-white transition-colors flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" /> Messages
-                </Link>
-                <Link to="/dashboard" className="text-sm font-medium text-gray-300 hover:text-white transition-colors flex items-center gap-2">
-                  <LayoutDashboard className="h-4 w-4" /> Dashboard
-                </Link>
+                <a href="https://discord.gg/0-n" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-300 hover:text-white transition-colors flex items-center gap-2">
+                  Support
+                </a>
                 {(userData?.role === 'admin' || user.uid === 'ywskXjtxYJVD5xSU5wSNcpaWnXZ2') && (
-                  <Link to="/admin" className="text-sm font-bold text-violet-400 hover:text-violet-300 transition-colors">Admin</Link>
-                )}
-                {!userData?.isVerifiedSeller && (
-                  <Link to="/verify" className="text-sm font-medium text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4" /> Get Verified
-                  </Link>
-                )}
-                {userData?.isVerifiedSeller && (
-                  <Link to="/create-listing" className="bg-white/10 hover:bg-white/20 text-white border border-white/10 px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2">
-                    <PlusCircle className="h-4 w-4" /> List Item
-                  </Link>
+                  <>
+                    <Link to="/admin" className="text-sm font-bold text-red-400 hover:text-red-300 transition-colors">Admin</Link>
+                    <Link to="/create-listing" className="bg-white/10 hover:bg-white/20 text-white border border-white/10 px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2">
+                      <PlusCircle className="h-4 w-4" /> Add Product
+                    </Link>
+                  </>
                 )}
                 <div 
                   className="relative ml-2 flex items-center gap-4"
@@ -149,7 +148,7 @@ function Navbar() {
                           className="flex items-center gap-3 px-5 py-3 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
                           onClick={() => setProfileMenuOpen(false)}
                         >
-                          <User className="h-4 w-4 text-violet-400" />
+                          <User className="h-4 w-4 text-red-400" />
                           Public Profile
                         </Link>
                         <Link 
@@ -157,7 +156,7 @@ function Navbar() {
                           className="flex items-center gap-3 px-5 py-3 text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
                           onClick={() => setProfileMenuOpen(false)}
                         >
-                          <LayoutDashboard className="h-4 w-4 text-violet-400" />
+                          <LayoutDashboard className="h-4 w-4 text-red-400" />
                           Dashboard
                         </Link>
                         <button 
@@ -176,7 +175,7 @@ function Navbar() {
                 </div>
               </>
             ) : (
-              <Link to="/login" className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg shadow-violet-500/20">
+              <Link to="/login" className="bg-red-600 hover:bg-red-500 text-white px-6 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg shadow-red-500/20">
                 Log In / Sign Up
               </Link>
             )}
@@ -192,16 +191,15 @@ function Navbar() {
         <div className="md:hidden bg-[#0a0a0a] border-t border-white/10">
           <div className="px-4 pt-4 pb-6 space-y-2">
             <Link to="/marketplace" className="block px-3 py-3 text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors">Marketplace</Link>
-            <Link to="/free-accounts" className="block px-3 py-3 text-base font-medium text-violet-400 hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3">
+            <Link to="/free-accounts" className="block px-3 py-3 text-base font-medium text-red-400 hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3">
               <Zap className="h-5 w-5" /> Free Accounts
             </Link>
             {user ? (
               <>
                 <Link to="/notifications" className="block px-3 py-3 text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3"><Bell className="h-5 w-5" /> Notifications</Link>
-                <Link to="/chat" className="block px-3 py-3 text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3"><MessageSquare className="h-5 w-5" /> Messages</Link>
                 <Link to="/dashboard" className="block px-3 py-3 text-base font-medium text-gray-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3"><LayoutDashboard className="h-5 w-5" /> Dashboard</Link>
                 {userData?.role === 'admin' && (
-                  <Link to="/admin" className="block px-3 py-3 text-base font-bold text-violet-400 hover:bg-white/5 rounded-xl transition-colors">Admin</Link>
+                  <Link to="/admin" className="block px-3 py-3 text-base font-bold text-red-400 hover:bg-white/5 rounded-xl transition-colors">Admin</Link>
                 )}
                 {!userData?.isVerifiedSeller ? (
                   <Link to="/verify" className="block px-3 py-3 text-base font-medium text-emerald-400 hover:bg-white/5 rounded-xl transition-colors flex items-center gap-3"><ShieldCheck className="h-5 w-5" /> Get Verified</Link>
@@ -234,14 +232,16 @@ export default function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/marketplace" element={<Marketplace />} />
+                  <Route path="/reviews" element={<Reviews />} />
+                  <Route path="/status" element={<Status />} />
                   <Route path="/free-accounts" element={<FreeAccounts />} />
                   <Route path="/offer/:id" element={<Offer />} />
                   <Route path="/seller/:id" element={<SellerProfile />} />
                   <Route path="/verify" element={<SellerVerification />} />
                   <Route path="/create-listing" element={<CreateListing />} />
-                  <Route path="/chat" element={<Chat />} />
-                  <Route path="/chat/:chatId" element={<Chat />} />
                   <Route path="/admin" element={<Admin />} />
+                  <Route path="/admin/traffic" element={<AdminTraffic />} />
+                  <Route path="/admin/revenue" element={<AdminRevenue />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/checkout/:id" element={<Checkout />} />
@@ -249,6 +249,7 @@ export default function App() {
                   <Route path="/payment-waiting/:purchaseId" element={<PaymentWaiting />} />
                   <Route path="/notifications" element={<Notifications />} />
                   <Route path="/support" element={<Support />} />
+                  <Route path="/account-details/:purchaseId" element={<AccountDetails />} />
                   <Route path="/terms" element={<TermsOfService />} />
                   <Route path="/privacy" element={<PrivacyPolicy />} />
                 </Routes>
@@ -259,35 +260,34 @@ export default function App() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
                   <div className="col-span-1 md:col-span-1">
                     <Link to="/" className="flex items-center gap-3 mb-6">
-                      <div className="h-8 w-8 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-lg flex items-center justify-center">
+                      <div className="h-8 w-8 bg-red-600 rounded-lg flex items-center justify-center">
                         <Gamepad2 className="h-5 w-5 text-white" />
                       </div>
                       <span className="font-display font-extrabold text-xl text-white">GameVault</span>
                     </Link>
                     <p className="text-gray-400 text-sm leading-relaxed">
-                      The most trusted marketplace for gaming accounts, items, and services. Buy and sell with confidence.
+                      The most trusted destination for premium gaming accounts and digital assets. Quality and security guaranteed.
                     </p>
                   </div>
                   
                   <div>
-                    <h3 className="font-bold text-white mb-6 uppercase tracking-wider text-sm">Marketplace</h3>
+                    <h3 className="font-bold text-white mb-6 uppercase tracking-wider text-sm">Shop</h3>
                     <ul className="space-y-4 text-sm text-gray-400">
-                      <li><Link to="/" className="hover:text-violet-400 transition-colors">Accounts</Link></li>
-                      <li><Link to="/" className="hover:text-violet-400 transition-colors">In-Game Items</Link></li>
-                      <li><Link to="/" className="hover:text-violet-400 transition-colors">Currency</Link></li>
-                      <li><Link to="/" className="hover:text-violet-400 transition-colors">Boosting</Link></li>
-                      <li><Link to="/" className="hover:text-violet-400 transition-colors">Coaching</Link></li>
+                      <li><Link to="/marketplace" className="hover:text-red-400 transition-colors">All Products</Link></li>
+                      <li><Link to="/free-accounts" className="hover:text-red-400 transition-colors">Free Accounts</Link></li>
+                      <li><Link to="/reviews" className="hover:text-red-400 transition-colors">Reviews</Link></li>
+                      <li><Link to="/status" className="hover:text-red-400 transition-colors">Status</Link></li>
                     </ul>
                   </div>
   
                   <div>
                     <h3 className="font-bold text-white mb-6 uppercase tracking-wider text-sm">Popular Games</h3>
                     <ul className="space-y-4 text-sm text-gray-400">
-                      <li><Link to="/" className="hover:text-violet-400 transition-colors">Fortnite</Link></li>
-                      <li><Link to="/" className="hover:text-violet-400 transition-colors">Valorant</Link></li>
-                      <li><Link to="/" className="hover:text-violet-400 transition-colors">CS2</Link></li>
-                      <li><Link to="/" className="hover:text-violet-400 transition-colors">League of Legends</Link></li>
-                      <li><Link to="/" className="hover:text-violet-400 transition-colors">Genshin Impact</Link></li>
+                      <li><Link to="/" className="hover:text-red-400 transition-colors">Fortnite</Link></li>
+                      <li><Link to="/" className="hover:text-red-400 transition-colors">Valorant</Link></li>
+                      <li><Link to="/" className="hover:text-red-400 transition-colors">CS2</Link></li>
+                      <li><Link to="/" className="hover:text-red-400 transition-colors">League of Legends</Link></li>
+                      <li><Link to="/" className="hover:text-red-400 transition-colors">Genshin Impact</Link></li>
                     </ul>
                   </div>
   
@@ -296,7 +296,7 @@ export default function App() {
                     <ul className="space-y-4 text-sm text-gray-400">
                       <li className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-emerald-400" /> Buyer Protection</li>
                       <li className="flex items-center gap-2"><Zap className="h-4 w-4 text-yellow-400" /> Instant Delivery</li>
-                      <li className="flex items-center gap-2"><MessageSquare className="h-4 w-4 text-blue-400" /> 24/7 Support</li>
+                      <li className="flex items-center gap-2 text-blue-400">24/7 Support</li>
                     </ul>
                   </div>
                 </div>
@@ -308,7 +308,7 @@ export default function App() {
                   <div className="flex gap-6 text-sm text-gray-500">
                     <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
                     <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
-                    <Link to="/support" className="hover:text-white transition-colors">Support</Link>
+                    <a href="https://discord.gg/0-n" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Support</a>
                   </div>
                 </div>
               </div>

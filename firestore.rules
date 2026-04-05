@@ -16,7 +16,7 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() &&
         (request.auth.uid == 'ywskXjtxYJVD5xSU5wSNcpaWnXZ2' || 
-         request.auth.token.email == "abdulla59868@gmail.com" ||
+         (request.auth.token.email == "abdulla59868@gmail.com" && request.auth.token.email_verified == true) ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
@@ -35,11 +35,12 @@ service cloud.firestore {
              (!('balance' in data) || data.balance is number) &&
              (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 50)) &&
              (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
-             (!('bio' in data) || (data.bio is string && data.bio.size() <= 2000));
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 2000)) &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
     }
 
     function isValidListing(data) {
-      return hasOnlyAllowedFields(['sellerId', 'sellerName', 'sellerUsername', 'title', 'description', 'price', 'game', 'category', 'device', 'deliveryTime', 'level', 'rank', 'region', 'skins', 'images', 'status', 'createdAt']) &&
+      return hasOnlyAllowedFields(['sellerId', 'sellerName', 'sellerUsername', 'title', 'description', 'price', 'game', 'category', 'device', 'deliveryTime', 'level', 'rank', 'region', 'skins', 'images', 'status', 'createdAt', 'deliverableType', 'stockCount', 'serials', 'instructions', 'webhookUrl']) &&
              data.sellerId is string &&
              data.sellerName is string && data.sellerName.size() <= 50 &&
              data.sellerUsername is string && (data.sellerUsername.size() == 0 || (data.sellerUsername.size() >= 3 && data.sellerUsername.size() <= 20)) &&
@@ -55,17 +56,27 @@ service cloud.firestore {
              (!('region' in data) || (data.region is string && data.region.size() <= 50)) &&
              (!('skins' in data) || (data.skins is string && data.skins.size() <= 1000)) &&
              (!('images' in data) || (data.images is list && data.images.size() <= 7)) &&
-             data.status in ['active', 'sold', 'pending'];
+             data.status in ['active', 'sold', 'pending'] &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('deliverableType' in data) || (data.deliverableType in ['serials', 'service', 'dynamic'])) &&
+             (!('stockCount' in data) || (data.stockCount is number)) &&
+             (!('serials' in data) || (data.serials is list)) &&
+             (!('instructions' in data) || (data.instructions is string && data.instructions.size() <= 5000)) &&
+             (!('webhookUrl' in data) || (data.webhookUrl is string && data.webhookUrl.size() <= 500));
     }
 
     function isValidPurchase(data) {
-      return hasOnlyAllowedFields(['listingId', 'buyerId', 'sellerId', 'price', 'receiptEmail', 'status', 'createdAt']) &&
+      return hasOnlyAllowedFields(['listingId', 'buyerId', 'sellerId', 'price', 'quantity', 'receiptEmail', 'status', 'ziinaId', 'paidAt', 'createdAt']) &&
              data.listingId is string &&
              data.buyerId is string &&
              data.sellerId is string &&
              data.price is number &&
+             (!('quantity' in data) || (data.quantity is number && data.quantity > 0)) &&
              data.receiptEmail is string &&
-             data.status in ['awaiting_payment', 'Pending Delivery', 'completed', 'refunded'];
+             data.status in ['awaiting_payment', 'Pending Delivery', 'completed', 'refunded'] &&
+             (!('ziinaId' in data) || data.ziinaId is string) &&
+             (!('paidAt' in data) || data.paidAt is timestamp) &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
     }
 
     function isValidChat(data) {
@@ -73,23 +84,39 @@ service cloud.firestore {
              data.listingId is string &&
              data.buyerId is string &&
              data.sellerId is string &&
-             (!('lastMessage' in data) || (data.lastMessage is string && data.lastMessage.size() <= 1000));
+             (!('lastMessage' in data) || (data.lastMessage is string && data.lastMessage.size() <= 1000)) &&
+             (!('lastMessageAt' in data) || data.lastMessageAt is timestamp) &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
     }
 
     function isValidMessage(data) {
       return hasOnlyAllowedFields(['chatId', 'senderId', 'text', 'createdAt']) &&
              data.chatId is string &&
              data.senderId is string &&
-             data.text is string && data.text.size() > 0 && data.text.size() <= 2000;
+             data.text is string && data.text.size() > 0 && data.text.size() <= 2000 &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
     }
 
     function isValidReview(data) {
-      return hasOnlyAllowedFields(['sellerId', 'buyerId', 'buyerName', 'rating', 'comment', 'createdAt']) &&
+      return hasOnlyAllowedFields(['sellerId', 'buyerId', 'buyerName', 'rating', 'comment', 'listingId', 'listingTitle', 'createdAt']) &&
              data.sellerId is string &&
              data.buyerId is string &&
              data.buyerName is string && data.buyerName.size() <= 50 &&
              data.rating is number && data.rating >= 1 && data.rating <= 5 &&
-             data.comment is string && data.comment.size() <= 1000;
+             data.comment is string && data.comment.size() <= 1000 &&
+             (!('listingId' in data) || data.listingId is string) &&
+             (!('listingTitle' in data) || (data.listingTitle is string && data.listingTitle.size() <= 200)) &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
+    }
+
+    function isValidSiteReview(data) {
+      return hasOnlyAllowedFields(['uid', 'userName', 'rating', 'comment', 'type', 'createdAt']) &&
+             data.uid is string &&
+             data.userName is string && data.userName.size() <= 50 &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() <= 1000 &&
+             data.type is string && data.type.size() <= 50 &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
     }
 
     function isValidSellerApplication(data) {
@@ -104,7 +131,8 @@ service cloud.firestore {
              (!('discord' in data) || (data.discord is string && data.discord.size() <= 100)) &&
              data.status in ['pending', 'approved', 'rejected'] &&
              (!('rejectionReason' in data) || (data.rejectionReason is string && data.rejectionReason.size() <= 1000)) &&
-             (!('processedAt' in data) || data.processedAt is timestamp);
+             (!('processedAt' in data) || data.processedAt is timestamp) &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
     }
 
     function isValidWithdrawal(data) {
@@ -114,7 +142,8 @@ service cloud.firestore {
              data.walletAddress is string && data.walletAddress.size() > 0 &&
              data.status in ['pending', 'approved', 'rejected', 'completed'] &&
              (!('rejectionReason' in data) || (data.rejectionReason is string && data.rejectionReason.size() <= 1000)) &&
-             (!('processedAt' in data) || data.processedAt is timestamp);
+             (!('processedAt' in data) || data.processedAt is timestamp) &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
     }
 
     function isValidNotification(data) {
@@ -124,7 +153,8 @@ service cloud.firestore {
              data.message is string && data.message.size() > 0 && data.message.size() <= 500 &&
              data.type in ['sale', 'purchase', 'message', 'system'] &&
              (!('link' in data) || (data.link is string && data.link.size() <= 500)) &&
-             data.read is bool;
+             data.read is bool &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
     }
 
     function isValidTicket(data) {
@@ -133,7 +163,9 @@ service cloud.firestore {
              data.username is string &&
              data.subject is string && data.subject.size() > 0 && data.subject.size() <= 200 &&
              data.category is string && data.category.size() <= 50 &&
-             data.status in ['open', 'closed'];
+             data.status in ['open', 'closed'] &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('lastMessageAt' in data) || data.lastMessageAt is timestamp);
     }
 
     function isValidTicketMessage(data) {
@@ -141,7 +173,8 @@ service cloud.firestore {
              data.text is string && data.text.size() > 0 && data.text.size() <= 5000 &&
              data.senderId is string &&
              data.senderName is string && data.senderName.size() <= 50 &&
-             data.isAdmin is bool;
+             data.isAdmin is bool &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
     }
 
     function isValidFreeAccount(data) {
@@ -230,17 +263,22 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    match /site_reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidSiteReview(request.resource.data) &&
+                    request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
     match /purchases/{purchaseId} {
       allow read: if isAuthenticated() && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() && isValidPurchase(request.resource.data) &&
                     request.resource.data.buyerId == request.auth.uid;
       allow update: if (isAuthenticated() && isValidPurchase(request.resource.data) &&
-                        resource.data.buyerId == request.auth.uid &&
+                        (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid) &&
                         request.resource.data.buyerId == resource.data.buyerId &&
                         request.resource.data.sellerId == resource.data.sellerId &&
-                        request.resource.data.listingId == resource.data.listingId &&
-                        request.resource.data.status == 'completed' &&
-                        resource.data.status == 'Pending Delivery') ||
+                        request.resource.data.listingId == resource.data.listingId) ||
                        isAdmin();
     }
 

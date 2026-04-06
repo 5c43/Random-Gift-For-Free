@@ -113,9 +113,13 @@ export function Dashboard() {
         status: 'completed'
       });
       
-      batch.update(doc(db, 'listings', listingId), {
-        status: 'sold'
-      });
+      const listingRef = doc(db, 'listings', listingId);
+      const listingSnap = await getDoc(listingRef);
+      if (listingSnap.exists() && listingSnap.data().status === 'pending') {
+        batch.update(listingRef, {
+          status: 'sold'
+        });
+      }
 
       // Release funds to seller
       batch.update(doc(db, 'users', purchase.sellerId), {

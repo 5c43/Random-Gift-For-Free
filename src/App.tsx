@@ -14,6 +14,8 @@ import { Chat } from './pages/Chat';
 import { Admin } from './pages/Admin';
 import { AdminTraffic } from './pages/AdminTraffic';
 import { AdminRevenue } from './pages/AdminRevenue';
+import { AdminProducts } from './pages/AdminProducts';
+import { AdminCoupons } from './pages/AdminCoupons';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Checkout } from './pages/Checkout';
@@ -31,6 +33,8 @@ import { db } from './firebase';
 import { motion } from 'motion/react';
 import { ErrorBoundary } from './pages/components/ErrorBoundary';
 import { handleFirestoreError, OperationType } from './lib/firestore-errors';
+
+import { GamingBackground } from './components/GamingBackground';
 
 function ProfileCheck({ children }: { children: React.ReactNode }) {
   const { user, userData, loading } = useAuth();
@@ -224,7 +228,7 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <Router>
-          <div className="animated-bg" />
+          <GamingBackground />
           <div className="min-h-screen text-gray-100 font-sans flex flex-col relative z-10">
             <Navbar />
             <main className="flex-grow">
@@ -242,6 +246,8 @@ export default function App() {
                   <Route path="/admin" element={<Admin />} />
                   <Route path="/admin/traffic" element={<AdminTraffic />} />
                   <Route path="/admin/revenue" element={<AdminRevenue />} />
+                  <Route path="/admin/products" element={<AdminProducts />} />
+                  <Route path="/admin/coupons" element={<AdminCoupons />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/checkout/:id" element={<Checkout />} />

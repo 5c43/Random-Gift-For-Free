@@ -5,11 +5,7 @@ import { motion } from 'motion/react';
 
 export function Home() {
   return (
-    <div className="min-h-screen bg-[#050505] text-white overflow-hidden relative">
-      {/* Grid Background Effect */}
-      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" 
-           style={{ backgroundImage: 'radial-gradient(#262626 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
-      
+    <div className="min-h-screen text-white overflow-hidden relative">
       {/* Animated Background Glows */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
         <motion.div 

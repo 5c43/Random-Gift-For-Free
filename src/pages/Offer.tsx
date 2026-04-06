@@ -94,7 +94,7 @@ export function Offer() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-[#050505] text-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden"
+      className="min-h-screen text-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden"
     >
       {/* Grid Background Effect */}
       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" 
@@ -128,17 +128,6 @@ export function Offer() {
 
             <div className="bg-[#0A0A0A]/80 backdrop-blur-xl border border-white/5 rounded-[2rem] p-10 space-y-12 shadow-2xl">
               <section>
-                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
-                  Requirements:
-                </h3>
-                <div className="border-l-2 border-red-500 pl-6 py-1 space-y-2">
-                  <p className="text-gray-400">For a showcase of this product take a look here Add Only Description And</p>
-                </div>
-              </section>
-
-              <div className="h-px bg-white/5 w-full"></div>
-
-              <section>
                 <h3 className="text-xl font-bold text-white mb-6">Features</h3>
                 <div className="border-l-2 border-red-500 pl-6 py-1 space-y-4">
                   {listing.description.split('\n').map((line: string, i: number) => (
@@ -165,7 +154,7 @@ export function Offer() {
                 {listing.title}
               </h1>
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold uppercase tracking-widest">
                   <Zap className="h-3.5 w-3.5 fill-current" />
                   Instant Delivery
@@ -175,11 +164,29 @@ export function Offer() {
 
             <div className="bg-[#0A0A0A]/80 backdrop-blur-xl border border-white/5 rounded-[2rem] p-8 shadow-2xl space-y-8">
               <div className="flex items-center justify-between">
-                <div className="text-4xl font-black text-white">
-                  ${listing.price.toFixed(2)}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-3">
+                    <div className="text-4xl font-black text-white">
+                      ${listing.price.toFixed(2)}
+                    </div>
+                    {listing.originalPrice && listing.originalPrice > listing.price && (
+                      <div className="text-lg font-bold text-gray-500 line-through">
+                        ${listing.originalPrice.toFixed(2)}
+                      </div>
+                    )}
+                  </div>
+                  {listing.originalPrice && listing.originalPrice > listing.price && (
+                    <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">
+                      Save {Math.round((1 - listing.price / listing.originalPrice) * 100)}% Today
+                    </p>
+                  )}
                 </div>
-                <div className="px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-widest">
-                  In Stock
+                <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                  (listing.stockCount || 0) > 0 
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' 
+                    : 'bg-red-500/10 border-red-500/20 text-red-500'
+                }`}>
+                  {listing.stockCount === 999999 ? 'In Stock (∞)' : (listing.stockCount || 0) > 0 ? `In Stock (${listing.stockCount})` : 'Out of Stock'}
                 </div>
               </div>
 
@@ -196,12 +203,17 @@ export function Offer() {
                     {quantity}
                   </div>
                   <button 
-                    onClick={() => setQuantity(quantity + 1)}
+                    onClick={() => setQuantity(Math.min(listing.stockCount || 1, quantity + 1))}
                     className="flex-1 h-full flex items-center justify-center hover:bg-white/5 transition-colors text-gray-400"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
                 </div>
+                {listing.stockCount !== 999999 && (listing.stockCount || 0) > 0 && (
+                  <p className="text-[10px] text-gray-500 text-center font-bold uppercase tracking-widest">
+                    Max available: {listing.stockCount}
+                  </p>
+                )}
               </div>
 
               <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-emerald-500/80 text-sm font-bold text-center">
@@ -230,14 +242,16 @@ export function Offer() {
               <div className="grid grid-cols-1 gap-4 pt-4">
                 <button 
                   onClick={handleBuyNow}
-                  className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-5 rounded-2xl transition-all shadow-[0_0_30px_rgba(220,38,38,0.3)] flex items-center justify-center gap-3 text-lg"
+                  disabled={(listing.stockCount || 0) <= 0}
+                  className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-5 rounded-2xl transition-all shadow-[0_0_30px_rgba(220,38,38,0.3)] flex items-center justify-center gap-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ShoppingCart className="h-5 w-5" />
                   Add to Cart
                 </button>
                 <button 
                   onClick={handleBuyNow}
-                  className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black py-5 rounded-2xl transition-all flex items-center justify-center gap-3 text-lg"
+                  disabled={(listing.stockCount || 0) <= 0}
+                  className="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black py-5 rounded-2xl transition-all flex items-center justify-center gap-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Zap className="h-5 w-5 text-red-500" />
                   Buy Now

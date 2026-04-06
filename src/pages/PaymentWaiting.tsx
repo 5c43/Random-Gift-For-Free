@@ -25,6 +25,22 @@ export function PaymentWaiting() {
         setStatus(data.status);
         
         if (data.status === 'Pending Delivery') {
+          // Increment coupon usage if applicable
+          if (data.couponId) {
+            const incrementCoupon = async () => {
+              try {
+                const { doc, updateDoc, increment } = await import('firebase/firestore');
+                const couponRef = doc(db, 'coupons', data.couponId);
+                await updateDoc(couponRef, {
+                  usageCount: increment(1)
+                });
+              } catch (err) {
+                console.error("Error incrementing coupon usage:", err);
+              }
+            };
+            incrementCoupon();
+          }
+
           // Success! Redirect to account details after a short delay
           setTimeout(() => {
             navigate(`/account-details/${purchaseId}`);
@@ -60,7 +76,7 @@ export function PaymentWaiting() {
   }, [purchaseId, navigate]);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden flex items-center justify-center">
+    <div className="min-h-screen text-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden flex items-center justify-center">
       {/* Grid Background Effect */}
       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" 
            style={{ backgroundImage: 'radial-gradient(#262626 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>

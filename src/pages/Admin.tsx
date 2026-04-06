@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
-import { ShieldAlert, Trash2, CheckCircle, XCircle, Users, ShoppingBag, Clock, ExternalLink, MessageSquare, User, AlertCircle, DollarSign, TrendingUp, BarChart3 } from 'lucide-react';
+import { ShieldAlert, Trash2, CheckCircle, XCircle, Users, ShoppingBag, Clock, ExternalLink, MessageSquare, User, AlertCircle, DollarSign, TrendingUp, BarChart3, Package, Ticket } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
@@ -280,6 +280,20 @@ export function Admin() {
           <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">Admin Dashboard</h1>
         </div>
         <div className="flex items-center gap-4">
+          <Link 
+            to="/admin/products"
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl font-bold transition-all border border-white/10"
+          >
+            <Package className="h-4 w-4 text-fuchsia-400" />
+            Products
+          </Link>
+          <Link 
+            to="/admin/coupons"
+            className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl font-bold transition-all border border-white/10"
+          >
+            <Ticket className="h-4 w-4 text-amber-400" />
+            Coupons
+          </Link>
           <Link 
             to="/admin/traffic"
             className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-xl font-bold transition-all border border-white/10"

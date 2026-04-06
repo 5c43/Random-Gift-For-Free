@@ -29,7 +29,10 @@ export function SellerProfile() {
           where('status', '==', 'active')
         );
         const listingsSnapshot = await getDocs(qListings);
-        setListings(listingsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        setListings(listingsSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter((listing: any) => (listing.stockCount ?? 1) > 0)
+        );
 
         const qReviews = query(
           collection(db, 'reviews'),

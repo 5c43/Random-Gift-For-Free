@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { doc, updateDoc, addDoc, collection, serverTimestamp, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
@@ -10,11 +10,14 @@ import { motion, Reorder } from 'motion/react';
 export function CreateListing() {
   const { user, userData } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('edit');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     price: '',
+    originalPrice: '',
     game: 'Fortnite',
     category: 'Accounts',
     level: '',
@@ -26,20 +29,62 @@ export function CreateListing() {
     serials: '',
     instructions: '',
     webhookUrl: '',
+    featured: false,
   });
+
+  useEffect(() => {
+    if (editId) {
+      const fetchListing = async () => {
+        try {
+          const docSnap = await getDoc(doc(db, 'listings', editId));
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setFormData({
+              title: data.title || '',
+              description: data.description || '',
+              price: data.price?.toString() || '',
+              originalPrice: data.originalPrice?.toString() || '',
+              game: data.game || 'Fortnite',
+              category: data.category || 'Accounts',
+              level: data.level || '',
+              rank: data.rank || '',
+              skins: data.skins || '',
+              images: data.images || [],
+              deliverableType: data.deliverableType || 'service',
+              stockCount: data.stockCount === 999999 ? 'infinite' : (data.stockCount?.toString() || '1'),
+              serials: data.serials?.join('\n') || '',
+              instructions: data.instructions || '',
+              webhookUrl: data.webhookUrl || '',
+              featured: data.featured || false,
+            });
+          }
+        } catch (error) {
+          handleFirestoreError(error, OperationType.GET, `listings/${editId}`);
+        }
+      };
+      fetchListing();
+    }
+  }, [editId]);
 
   const [newImageUrl, setNewImageUrl] = useState('');
 
   const games = [
     "Fortnite", "Valorant", "League of Legends", "CS2", "Genshin Impact", 
-    "Roblox", "Minecraft", "Apex Legends", "Dota 2", "Call of Duty", "FIFA"
+    "Roblox", "Minecraft", "Apex Legends", "Dota 2", "Call of Duty", "FIFA", "Rust", "GTA V"
   ];
 
-  const categories = ["Accounts", "Items", "Boosting", "Currency"];
+  const categories = ["Accounts", "Items", "Boosting", "Currency", "Software"];
 
   const handleAddImage = () => {
     if (!newImageUrl.trim()) return;
     if (formData.images.length >= 7) return;
+    // Basic URL validation
+    try {
+      new URL(newImageUrl);
+    } catch (e) {
+      alert('Please enter a valid image URL');
+      return;
+    }
     setFormData({
       ...formData,
       images: [...formData.images, newImageUrl.trim()]
@@ -60,15 +105,28 @@ export function CreateListing() {
   const handlePostListing = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    // Validation
+    if (parseFloat(formData.price) <= 0) {
+      alert('Price must be greater than 0');
+      return;
+    }
+
+    if (formData.images.length === 0) {
+      alert('Please add at least one image');
+      return;
+    }
+
     setLoading(true);
     try {
-      await addDoc(collection(db, 'listings'), {
+      const listingData = {
         sellerId: user.uid,
         sellerName: userData?.displayName || user.email?.split('@')[0] || 'Anonymous',
         sellerUsername: userData?.username || '',
         title: formData.title,
         description: formData.description,
         price: parseFloat(formData.price),
+        originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : null,
         game: formData.game,
         category: formData.category,
         level: formData.level,
@@ -82,12 +140,22 @@ export function CreateListing() {
         serials: formData.deliverableType === 'serials' ? formData.serials.split('\n').filter(s => s.trim()) : [],
         instructions: formData.instructions,
         webhookUrl: formData.webhookUrl,
+        featured: formData.featured,
         status: 'active',
-        createdAt: serverTimestamp(),
-      });
-      navigate('/marketplace');
+        updatedAt: serverTimestamp(),
+      };
+
+      if (editId) {
+        await updateDoc(doc(db, 'listings', editId), listingData);
+      } else {
+        await addDoc(collection(db, 'listings'), {
+          ...listingData,
+          createdAt: serverTimestamp(),
+        });
+      }
+      navigate('/admin/products');
     } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'listings');
+      handleFirestoreError(error, editId ? OperationType.UPDATE : OperationType.CREATE, 'listings');
     } finally {
       setLoading(false);
     }
@@ -431,39 +499,73 @@ export function CreateListing() {
                 <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
                   <DollarSign className="h-5 w-5 text-red-400" />
                 </div>
-                <h2 className="text-xl font-bold text-white">Pricing</h2>
+                <h2 className="text-xl font-bold text-white">Pricing & Visibility</h2>
               </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-400 mb-3 uppercase tracking-widest">Price ($)</label>
-                <div className="space-y-4">
-                  <input 
-                    required 
-                    type="number" 
-                    min="0" 
-                    step="0.01" 
-                    value={formData.price} 
-                    onChange={e => setFormData({...formData, price: e.target.value})} 
-                    className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-600 text-2xl font-extrabold text-red-500" 
-                    placeholder="0.00" 
-                  />
-                  {formData.price && parseFloat(formData.price) > 0 && (
-                    <div className="bg-black/20 rounded-2xl p-4 border border-white/5 space-y-2">
-                      <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-gray-500">
-                        <span>Listing Price</span>
-                        <span>${parseFloat(formData.price).toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-red-400/80">
-                        <span>Website Fee (5%)</span>
-                        <span>-${(parseFloat(formData.price) * 0.05).toFixed(2)}</span>
-                      </div>
-                      <div className="h-px bg-white/5 my-2"></div>
-                      <div className="flex justify-between text-sm font-black uppercase tracking-widest text-red-400">
-                        <span>You Receive</span>
-                        <span>${(parseFloat(formData.price) * 0.95).toFixed(2)}</span>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-400 mb-3 uppercase tracking-widest">Sale Price ($)</label>
+                    <input 
+                      required 
+                      type="number" 
+                      min="0" 
+                      step="0.01" 
+                      value={formData.price} 
+                      onChange={e => setFormData({...formData, price: e.target.value})} 
+                      className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-600 text-2xl font-extrabold text-red-500" 
+                      placeholder="0.00" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-400 mb-3 uppercase tracking-widest">Original Price ($) (Optional)</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      step="0.01" 
+                      value={formData.originalPrice} 
+                      onChange={e => setFormData({...formData, originalPrice: e.target.value})} 
+                      className="w-full bg-[#1A1A1A] border border-[#262626] rounded-2xl px-6 py-4 text-white focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-gray-600 text-2xl font-extrabold text-gray-500" 
+                      placeholder="0.00" 
+                    />
+                  </div>
+                </div>
+
+                {(userData?.role === 'admin' || user.uid === 'ywskXjtxYJVD5xSU5wSNcpaWnXZ2') && (
+                  <div className="flex items-center justify-between p-4 bg-red-500/5 border border-red-500/10 rounded-2xl">
+                    <div className="flex items-center gap-3">
+                      <Zap className="h-5 w-5 text-red-500" />
+                      <div>
+                        <p className="text-sm font-bold text-white uppercase tracking-widest">Featured Listing</p>
+                        <p className="text-[10px] text-gray-500">Show this product at the top of the marketplace</p>
                       </div>
                     </div>
-                  )}
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({...formData, featured: !formData.featured})}
+                      className={`w-12 h-6 rounded-full transition-all relative ${formData.featured ? 'bg-red-600' : 'bg-gray-700'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${formData.featured ? 'left-7' : 'left-1'}`} />
+                    </button>
+                  </div>
+                )}
+
+                {formData.price && parseFloat(formData.price) > 0 && (
+                  <div className="bg-black/20 rounded-2xl p-4 border border-white/5 space-y-2">
+                    <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-gray-500">
+                      <span>Listing Price</span>
+                      <span>${parseFloat(formData.price).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-red-400/80">
+                      <span>Website Fee (5%)</span>
+                      <span>-${(parseFloat(formData.price) * 0.05).toFixed(2)}</span>
+                    </div>
+                    <div className="h-px bg-white/5 my-2"></div>
+                    <div className="flex justify-between text-sm font-black uppercase tracking-widest text-red-400">
+                      <span>You Receive</span>
+                      <span>${(parseFloat(formData.price) * 0.95).toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
 
@@ -526,7 +628,7 @@ export function CreateListing() {
               type="submit" 
               className="w-full max-w-md mx-auto bg-red-600 hover:bg-red-500 text-white font-extrabold py-5 rounded-2xl transition-all shadow-[0_0_20px_rgba(239,68,68,0.3)] hover:shadow-[0_0_30px_rgba(239,68,68,0.5)] transform hover:-translate-y-1 disabled:opacity-50 text-xl"
             >
-              {loading ? 'Creating Listing...' : 'Create Listing'}
+              {loading ? (editId ? 'Updating...' : 'Creating...') : (editId ? 'Update Listing' : 'Create Listing')}
             </button>
             <p className="text-xs text-gray-500 mt-6 font-medium uppercase tracking-widest">Your listing will be live instantly after creation</p>
           </motion.div>

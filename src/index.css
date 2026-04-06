@@ -19,24 +19,6 @@ h1, h2, h3, h4, h5, h6, .font-display {
   font-family: var(--font-display);
 }
 
-.animated-bg {
-  position: fixed;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.08), transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(239, 68, 68, 0.05), transparent 40%);
-  animation: rotateBg 40s linear infinite;
-  z-index: -1;
-  pointer-events: none;
-}
-
-@keyframes rotateBg {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

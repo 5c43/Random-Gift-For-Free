@@ -5,7 +5,7 @@ import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, CheckCircle2, CreditCard, ArrowLeft, MessageSquare, Loader2, Zap, Wallet } from 'lucide-react';
+import { ShieldCheck, CheckCircle2, CreditCard, ArrowLeft, MessageSquare, Loader2, Zap, Wallet, Ticket } from 'lucide-react';
 
 export function Checkout() {
   const { id } = useParams<{ id: string }>();
@@ -41,19 +41,90 @@ export function Checkout() {
 
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim() || !user) return;
+    setCouponLoading(true);
+    setCouponError(null);
+    try {
+      const q = query(collection(db, 'coupons'), where('code', '==', couponCode.toUpperCase().trim()));
+      const querySnapshot = await getDocs(q);
+      
+      if (querySnapshot.empty) {
+        setCouponError('Invalid coupon code.');
+        setAppliedCoupon(null);
+        return;
+      }
+
+      const couponData = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as any;
+
+      // Validation
+      if (couponData.status !== 'active') {
+        setCouponError('This coupon is no longer active.');
+        return;
+      }
+
+      if (couponData.expiryDate && couponData.expiryDate.toDate() < new Date()) {
+        setCouponError('This coupon has expired.');
+        return;
+      }
+
+      if (couponData.usageLimit > 0 && couponData.usageCount >= couponData.usageLimit) {
+        setCouponError('This coupon has reached its usage limit.');
+        return;
+      }
+
+      if (couponData.minPurchase > 0 && subtotal < couponData.minPurchase) {
+        setCouponError(`Minimum purchase of $${couponData.minPurchase} required.`);
+        return;
+      }
+
+      setAppliedCoupon(couponData);
+      setCouponError(null);
+    } catch (error) {
+      console.error("Error applying coupon:", error);
+      setCouponError('Failed to apply coupon.');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
 
   const subtotal = listing ? listing.price * quantity : 0;
-  const discount = quantity >= 3 ? subtotal * 0.1 : 0;
-  const total = subtotal - discount;
+  const bulkDiscount = quantity >= 3 ? subtotal * 0.1 : 0;
+  
+  let couponDiscount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.discountType === 'percentage') {
+      couponDiscount = (subtotal - bulkDiscount) * (appliedCoupon.discountValue / 100);
+      if (appliedCoupon.maxDiscount > 0 && couponDiscount > appliedCoupon.maxDiscount) {
+        couponDiscount = appliedCoupon.maxDiscount;
+      }
+    } else {
+      couponDiscount = appliedCoupon.discountValue;
+    }
+  }
+
+  const total = Math.max(0, subtotal - bulkDiscount - couponDiscount);
 
   const handlePayWithZiina = async () => {
     if (!listing || !user) return;
     setPaymentLoading(true);
     setPaymentError(null);
     try {
+      // Check stock first
+      const listingRef = doc(db, 'listings', listing.id);
+      const listingDoc = await getDoc(listingRef);
+      if (!listingDoc.exists()) throw new Error('Listing not found');
+      const currentStock = listingDoc.data().stockCount ?? 1;
+      if (currentStock < quantity) {
+        throw new Error(`Insufficient stock. Only ${currentStock} items available.`);
+      }
+
       const purchaseId = `${user.uid}_${listing.id}_${Date.now()}`;
-      
-      const { setDoc, doc, serverTimestamp } = await import('firebase/firestore');
       
       try {
         await setDoc(doc(db, 'purchases', purchaseId), {
@@ -67,6 +138,9 @@ export function Checkout() {
           receiptEmail: user.email || '',
           status: 'awaiting_payment',
           paymentMethod: 'Ziina Pay',
+          couponId: appliedCoupon?.id || null,
+          couponCode: appliedCoupon?.code || null,
+          discountAmount: couponDiscount,
           createdAt: serverTimestamp(),
         });
       } catch (error) {
@@ -116,9 +190,18 @@ export function Checkout() {
     setPaymentLoading(true);
     setPaymentError(null);
     try {
+      // Check stock first
+      const listingRef = doc(db, 'listings', listing.id);
+      const listingDoc = await getDoc(listingRef);
+      if (!listingDoc.exists()) throw new Error('Listing not found');
+      const currentStock = listingDoc.data().stockCount ?? 1;
+      if (currentStock < quantity) {
+        throw new Error(`Insufficient stock. Only ${currentStock} items available.`);
+      }
+
       const purchaseId = `${user.uid}_${listing.id}_${Date.now()}`;
       
-      const { runTransaction, doc, serverTimestamp } = await import('firebase/firestore');
+      const { runTransaction } = await import('firebase/firestore');
       
       await runTransaction(db, async (transaction) => {
         const userRef = doc(db, 'users', user.uid);
@@ -147,14 +230,42 @@ export function Checkout() {
           receiptEmail: user.email || '',
           status: 'Pending Delivery',
           paymentMethod: 'Wallet Balance',
+          couponId: appliedCoupon?.id || null,
+          couponCode: appliedCoupon?.code || null,
+          discountAmount: couponDiscount,
           createdAt: serverTimestamp(),
         });
 
+        // Increment coupon usage if applicable
+        if (appliedCoupon) {
+          const couponRef = doc(db, 'coupons', appliedCoupon.id);
+          const { increment } = await import('firebase/firestore');
+          transaction.update(couponRef, {
+            usageCount: increment(1)
+          });
+        }
+
         // Update listing status
         const listingRef = doc(db, 'listings', listing.id);
-        transaction.update(listingRef, {
-          status: 'pending'
-        });
+        const listingDoc = await transaction.get(listingRef);
+        if (!listingDoc.exists()) throw new Error('Listing not found');
+        
+        const currentStock = listingDoc.data().stockCount ?? 1;
+        if (currentStock < quantity) {
+          throw new Error(`Insufficient stock. Only ${currentStock} items available.`);
+        }
+        const newStock = Math.max(0, currentStock - quantity);
+          
+          if (newStock <= 0) {
+            transaction.update(listingRef, {
+              status: 'pending',
+              stockCount: 0
+            });
+          } else {
+            transaction.update(listingRef, {
+              stockCount: newStock
+            });
+          }
 
         // Create notification for seller
         const notifRef = doc(collection(db, 'notifications'));
@@ -211,7 +322,7 @@ export function Checkout() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen text-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Grid Background Effect */}
       <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" 
            style={{ backgroundImage: 'radial-gradient(#262626 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
@@ -473,16 +584,62 @@ export function Checkout() {
                   <span>Subtotal</span>
                   <span className="text-white font-bold">${subtotal.toFixed(2)}</span>
                 </div>
-                {discount > 0 && (
+                {bulkDiscount > 0 && (
                   <div className="flex justify-between text-emerald-500 font-bold">
                     <span>Bulk Discount (10%)</span>
-                    <span>-${discount.toFixed(2)}</span>
+                    <span>-${bulkDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                {appliedCoupon && (
+                  <div className="flex justify-between text-emerald-500 font-bold">
+                    <span>Coupon ({appliedCoupon.code})</span>
+                    <span>-${couponDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-gray-500 font-medium">
                   <span>Buyer protection</span>
                   <span className="text-emerald-500 font-bold">Free</span>
                 </div>
+                
+                {/* Coupon Input */}
+                {!appliedCoupon ? (
+                  <div className="pt-6 border-t border-white/5">
+                    <div className="flex gap-2">
+                      <input 
+                        type="text"
+                        placeholder="Coupon code"
+                        value={couponCode}
+                        onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                        className="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition-all uppercase"
+                      />
+                      <button 
+                        onClick={handleApplyCoupon}
+                        disabled={couponLoading || !couponCode.trim()}
+                        className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+                      >
+                        {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
+                      </button>
+                    </div>
+                    {couponError && <p className="text-red-500 text-[10px] mt-2 font-bold">{couponError}</p>}
+                  </div>
+                ) : (
+                  <div className="pt-6 border-t border-white/5 flex items-center justify-between bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/20">
+                    <div className="flex items-center gap-2">
+                      <Ticket className="h-4 w-4 text-emerald-500" />
+                      <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">{appliedCoupon.code} Applied</span>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        setAppliedCoupon(null);
+                        setCouponCode('');
+                      }}
+                      className="text-gray-500 hover:text-white text-xs font-bold"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+
                 <div className="pt-8 border-t border-white/5 flex justify-between items-center">
                   <span className="text-xl font-black text-white uppercase tracking-widest">Total</span>
                   <span className="text-4xl font-black text-red-500 tracking-tighter">

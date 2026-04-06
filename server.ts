@@ -266,9 +266,24 @@ async function startServer() {
 
           // Update listing status
           if (purchaseData?.listingId) {
-            await db.collection("listings").doc(purchaseData.listingId).update({
-              status: "pending"
-            });
+            const listingRef = db.collection("listings").doc(purchaseData.listingId);
+            const listingDoc = await listingRef.get();
+            if (listingDoc.exists) {
+              const currentStock = listingDoc.data()?.stockCount ?? 1;
+              const quantity = purchaseData?.quantity ?? 1;
+              const newStock = Math.max(0, currentStock - quantity);
+              
+              if (newStock <= 0) {
+                await listingRef.update({
+                  status: "pending",
+                  stockCount: 0
+                });
+              } else {
+                await listingRef.update({
+                  stockCount: newStock
+                });
+              }
+            }
           }
 
           // Create notifications
@@ -345,9 +360,24 @@ async function startServer() {
 
               // Update listing status to pending (escrow)
               if (purchaseData?.listingId) {
-                await db.collection("listings").doc(purchaseData.listingId).update({
-                  status: "pending"
-                });
+                const listingRef = db.collection("listings").doc(purchaseData.listingId);
+                const listingDoc = await listingRef.get();
+                if (listingDoc.exists) {
+                  const currentStock = listingDoc.data()?.stockCount ?? 1;
+                  const quantity = purchaseData?.quantity ?? 1;
+                  const newStock = Math.max(0, currentStock - quantity);
+                  
+                  if (newStock <= 0) {
+                    await listingRef.update({
+                      status: "pending",
+                      stockCount: 0
+                    });
+                  } else {
+                    await listingRef.update({
+                      stockCount: newStock
+                    });
+                  }
+                }
               }
 
               // Create notification for seller

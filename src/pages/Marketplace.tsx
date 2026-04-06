@@ -18,11 +18,12 @@ export function Marketplace() {
 
   const games = [
     "All Games", "Fortnite", "Valorant", "League of Legends", "CS2", 
-    "Genshin Impact", "Roblox", "Minecraft", "Apex Legends", "Dota 2", "World of Warcraft"
+    "Genshin Impact", "Roblox", "Minecraft", "Apex Legends", "Dota 2", "Call of Duty", "FIFA", "Rust", "GTA V"
   ];
 
-  const categories = ["All Categories", "Accounts", "Items", "Boosting", "Currency"];
+  const categories = ["All Categories", "Accounts", "Items", "Boosting", "Currency", "Software"];
   const sortOptions = ["Newest First", "Price: Low to High", "Price: High to Low", "Most Viewed"];
+
 
   const mockListings = [
     {
@@ -109,12 +110,25 @@ export function Marketplace() {
                            game.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesGame = selectedGame === 'All Games' || game === selectedGame;
       const matchesCategory = selectedCategory === 'All Categories' || (listing?.category || 'Accounts') === selectedCategory;
-      return matchesSearch && matchesGame && matchesCategory;
+      const hasStock = (listing?.stockCount ?? 1) > 0;
+      const isAvailable = (listing?.status || 'active') === 'active';
+      return matchesSearch && matchesGame && matchesCategory && hasStock && isAvailable;
     })
     .sort((a, b) => {
-      const dateA = a?.createdAt instanceof Date ? a.createdAt.getTime() : 0;
-      const dateB = b?.createdAt instanceof Date ? b.createdAt.getTime() : 0;
-      if (sortBy === 'Newest First') return dateB - dateA;
+      if (sortBy === 'Newest First') {
+        // If both have sortOrder, use it (ascending as per AdminProducts logic)
+        if (typeof a.sortOrder === 'number' && typeof b.sortOrder === 'number') {
+          return a.sortOrder - b.sortOrder;
+        }
+        // If only one has sortOrder, prioritize it
+        if (typeof a.sortOrder === 'number') return -1;
+        if (typeof b.sortOrder === 'number') return 1;
+
+        // Fallback to createdAt
+        const dateA = a?.createdAt instanceof Date ? a.createdAt.getTime() : 0;
+        const dateB = b?.createdAt instanceof Date ? b.createdAt.getTime() : 0;
+        return dateB - dateA;
+      }
       if (sortBy === 'Price: Low to High') return (a?.price || 0) - (b?.price || 0);
       if (sortBy === 'Price: High to Low') return (b?.price || 0) - (a?.price || 0);
       if (sortBy === 'Most Viewed') return (b?.views || 0) - (a?.views || 0);
@@ -122,11 +136,7 @@ export function Marketplace() {
     });
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Grid Background Effect */}
-      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" 
-           style={{ backgroundImage: 'radial-gradient(#262626 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
-
+    <div className="min-h-screen text-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Top Section */}
         <div className="mb-12">
@@ -238,6 +248,19 @@ export function Marketplace() {
                 </>
               )}
             </div>
+
+            {(selectedGame !== 'All Games' || selectedCategory !== 'All Categories' || searchTerm) && (
+              <button 
+                onClick={() => {
+                  setSelectedGame('All Games');
+                  setSelectedCategory('All Categories');
+                  setSearchTerm('');
+                }}
+                className="text-red-500 hover:text-red-400 text-sm font-bold uppercase tracking-widest px-4"
+              >
+                Clear All
+              </button>
+            )}
           </div>
         </div>
 
@@ -284,7 +307,7 @@ export function Marketplace() {
 
                   {/* Middle Content */}
                   <div className="p-6">
-                    <div className="flex gap-2 mb-4">
+                    <div className="flex gap-2 mb-4 flex-wrap">
                       <span className="bg-yellow-500/10 text-yellow-500 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-yellow-500/20 uppercase tracking-wider">
                         {listing.game}
                       </span>
@@ -298,18 +321,30 @@ export function Marketplace() {
                     </h3>
                     
                     <p className="text-sm text-gray-500 mb-6">
-                      {listing.details || `${listing.level ? `Lvl ${listing.level}` : ''} • ${listing.rank || ''} • ${listing.skins || ''}`}
+                      {listing.details || `${listing.level ? `Lvl ${listing.level}` : ''} ${listing.rank ? `• ${listing.rank}` : ''} ${listing.skins ? `• ${listing.skins}` : ''}`}
                     </p>
 
                     <div className="flex items-center justify-between pt-6 border-t border-white/5">
                       <div>
                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Price</p>
-                        <p className="text-2xl font-extrabold text-[#10B981]">${listing.price.toFixed(2)}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-2xl font-extrabold text-[#10B981]">${listing.price.toFixed(2)}</p>
+                          {listing.originalPrice && listing.originalPrice > listing.price && (
+                            <p className="text-sm font-bold text-gray-500 line-through">${listing.originalPrice.toFixed(2)}</p>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className="bg-red-500/10 text-red-400 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-red-500/20 uppercase tracking-wider">
-                          Instant Delivery
-                        </span>
+                      <div className="text-right space-y-2">
+                        <div className="flex items-center gap-2 justify-end">
+                          <span className="bg-red-500/10 text-red-400 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-red-500/20 uppercase tracking-wider">
+                            Instant Delivery
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 justify-end">
+                          <span className="bg-white/5 text-gray-400 text-[10px] font-bold px-2.5 py-1 rounded-lg border border-white/10 uppercase tracking-wider">
+                            Stock: {listing.stockCount === 999999 ? '∞' : listing.stockCount || 0}
+                          </span>
+                        </div>
                       </div>
                     </div>
 

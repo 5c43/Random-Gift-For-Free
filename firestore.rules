@@ -40,13 +40,14 @@ service cloud.firestore {
     }
 
     function isValidListing(data) {
-      return hasOnlyAllowedFields(['sellerId', 'sellerName', 'sellerUsername', 'title', 'description', 'price', 'game', 'category', 'device', 'deliveryTime', 'level', 'rank', 'region', 'skins', 'images', 'status', 'createdAt', 'deliverableType', 'stockCount', 'serials', 'instructions', 'webhookUrl']) &&
+      return hasOnlyAllowedFields(['sellerId', 'sellerName', 'sellerUsername', 'title', 'description', 'price', 'originalPrice', 'game', 'category', 'device', 'deliveryTime', 'level', 'rank', 'region', 'platform', 'skins', 'images', 'status', 'createdAt', 'updatedAt', 'deliverableType', 'stockCount', 'serials', 'instructions', 'webhookUrl', 'featured', 'tags', 'sortOrder']) &&
              data.sellerId is string &&
              data.sellerName is string && data.sellerName.size() <= 50 &&
              data.sellerUsername is string && (data.sellerUsername.size() == 0 || (data.sellerUsername.size() >= 3 && data.sellerUsername.size() <= 20)) &&
              data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
              data.description is string && data.description.size() <= 5000 &&
              data.price is number && data.price >= 0 &&
+             (!('originalPrice' in data) || data.originalPrice == null || data.originalPrice is number) &&
              data.game is string && data.game.size() <= 50 &&
              (!('category' in data) || (data.category is string && data.category.size() <= 50)) &&
              (!('device' in data) || (data.device is string && data.device.size() <= 50)) &&
@@ -54,29 +55,40 @@ service cloud.firestore {
              (!('level' in data) || (data.level is string && data.level.size() <= 50)) &&
              (!('rank' in data) || (data.rank is string && data.rank.size() <= 50)) &&
              (!('region' in data) || (data.region is string && data.region.size() <= 50)) &&
+             (!('platform' in data) || (data.platform is string && data.platform.size() <= 50)) &&
              (!('skins' in data) || (data.skins is string && data.skins.size() <= 1000)) &&
              (!('images' in data) || (data.images is list && data.images.size() <= 7)) &&
              data.status in ['active', 'sold', 'pending'] &&
              (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp) &&
              (!('deliverableType' in data) || (data.deliverableType in ['serials', 'service', 'dynamic'])) &&
              (!('stockCount' in data) || (data.stockCount is number)) &&
              (!('serials' in data) || (data.serials is list)) &&
              (!('instructions' in data) || (data.instructions is string && data.instructions.size() <= 5000)) &&
-             (!('webhookUrl' in data) || (data.webhookUrl is string && data.webhookUrl.size() <= 500));
+             (!('webhookUrl' in data) || (data.webhookUrl is string && data.webhookUrl.size() <= 500)) &&
+             (!('featured' in data) || data.featured is bool) &&
+             (!('tags' in data) || data.tags is list) &&
+             (!('sortOrder' in data) || data.sortOrder is number);
     }
 
     function isValidPurchase(data) {
-      return hasOnlyAllowedFields(['listingId', 'buyerId', 'sellerId', 'price', 'quantity', 'receiptEmail', 'status', 'ziinaId', 'paidAt', 'createdAt']) &&
+      return hasOnlyAllowedFields(['listingId', 'listingTitle', 'buyerId', 'buyerEmail', 'sellerId', 'price', 'quantity', 'receiptEmail', 'status', 'paymentMethod', 'ziinaId', 'paidAt', 'createdAt', 'couponId', 'couponCode', 'discountAmount']) &&
              data.listingId is string &&
+             (!('listingTitle' in data) || (data.listingTitle is string && data.listingTitle.size() <= 200)) &&
              data.buyerId is string &&
+             (!('buyerEmail' in data) || data.buyerEmail is string) &&
              data.sellerId is string &&
              data.price is number &&
              (!('quantity' in data) || (data.quantity is number && data.quantity > 0)) &&
              data.receiptEmail is string &&
              data.status in ['awaiting_payment', 'Pending Delivery', 'completed', 'refunded'] &&
+             (!('paymentMethod' in data) || data.paymentMethod is string) &&
              (!('ziinaId' in data) || data.ziinaId is string) &&
              (!('paidAt' in data) || data.paidAt is timestamp) &&
-             (!('createdAt' in data) || data.createdAt is timestamp);
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('couponId' in data) || data.couponId == null || data.couponId is string) &&
+             (!('couponCode' in data) || data.couponCode == null || data.couponCode is string) &&
+             (!('discountAmount' in data) || data.discountAmount is number);
     }
 
     function isValidChat(data) {
@@ -186,6 +198,21 @@ service cloud.firestore {
              data.createdAt is timestamp;
     }
 
+    function isValidCoupon(data) {
+      return hasOnlyAllowedFields(['code', 'discountType', 'discountValue', 'minPurchase', 'maxDiscount', 'expiryDate', 'usageLimit', 'usageCount', 'status', 'createdAt', 'updatedAt']) &&
+             data.code is string && data.code.size() > 0 && data.code.size() <= 20 &&
+             data.discountType in ['percentage', 'fixed'] &&
+             data.discountValue is number && data.discountValue > 0 &&
+             (!('minPurchase' in data) || data.minPurchase is number) &&
+             (!('maxDiscount' in data) || data.maxDiscount is number) &&
+             (!('expiryDate' in data) || data.expiryDate == null || data.expiryDate is timestamp) &&
+             (!('usageLimit' in data) || data.usageLimit is number) &&
+             (!('usageCount' in data) || data.usageCount is number) &&
+             data.status in ['active', 'inactive'] &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -224,6 +251,10 @@ service cloud.firestore {
       allow update: if (isAuthenticated() && isValidListing(request.resource.data) &&
                         resource.data.sellerId == request.auth.uid &&
                         request.resource.data.sellerId == resource.data.sellerId) ||
+                       (isAuthenticated() && 
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'stockCount']) &&
+                        (request.resource.data.status == 'pending' || request.resource.data.status == resource.data.status) &&
+                        request.resource.data.stockCount <= resource.data.stockCount) ||
                        (isAuthenticated() && 
                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
                         request.resource.data.status == 'sold' &&
@@ -339,6 +370,16 @@ service cloud.firestore {
       allow create: if isAdmin() && isValidFreeAccount(request.resource.data);
       allow update: if isAdmin() && isValidFreeAccount(request.resource.data) &&
                     request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+
+    match /coupons/{couponId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && isValidCoupon(request.resource.data);
+      allow update: if isAdmin() && isValidCoupon(request.resource.data) ||
+                      (isAuthenticated() && 
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usageCount']) &&
+                       request.resource.data.usageCount == resource.data.usageCount + 1);
       allow delete: if isAdmin();
     }
   }

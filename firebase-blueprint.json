@@ -29,23 +29,30 @@
         "title": { "type": "string" },
         "description": { "type": "string" },
         "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
         "game": { "type": "string" },
+        "category": { "type": "string" },
         "device": { "type": "string" },
         "deliveryTime": { "type": "string" },
         "level": { "type": "string" },
         "rank": { "type": "string" },
         "region": { "type": "string" },
+        "platform": { "type": "string" },
         "skins": { "type": "string" },
         "images": { "type": "array", "items": { "type": "string" } },
         "status": { "type": "string", "enum": ["active", "sold", "pending"] },
         "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
         "deliverableType": { "type": "string", "enum": ["serials", "service", "dynamic"] },
         "stockCount": { "type": "number" },
         "serials": { "type": "array", "items": { "type": "string" } },
         "instructions": { "type": "string" },
-        "webhookUrl": { "type": "string" }
+        "webhookUrl": { "type": "string" },
+        "featured": { "type": "boolean" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "sortOrder": { "type": "number" }
       },
-      "required": ["sellerId", "sellerName", "title", "description", "price", "game", "device", "deliveryTime", "status", "createdAt", "deliverableType"]
+      "required": ["sellerId", "sellerName", "title", "description", "price", "game", "status", "createdAt", "deliverableType"]
     },
     "Purchase": {
       "title": "Purchase",
@@ -53,12 +60,20 @@
       "type": "object",
       "properties": {
         "listingId": { "type": "string" },
+        "listingTitle": { "type": "string" },
         "buyerId": { "type": "string" },
+        "buyerEmail": { "type": "string" },
         "sellerId": { "type": "string" },
         "price": { "type": "number" },
         "quantity": { "type": "number" },
         "receiptEmail": { "type": "string" },
         "status": { "type": "string", "enum": ["awaiting_payment", "Pending Delivery", "completed", "refunded"] },
+        "paymentMethod": { "type": "string" },
+        "ziinaId": { "type": "string" },
+        "paidAt": { "type": "string", "format": "date-time" },
+        "couponId": { "type": "string" },
+        "couponCode": { "type": "string" },
+        "discountAmount": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
         "deliveredContent": { "type": "string" }
       },
@@ -194,6 +209,24 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["title", "description", "imageUrl", "link", "createdAt"]
+    },
+    "Coupon": {
+      "title": "Coupon",
+      "description": "A discount coupon code.",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "discountType": { "type": "string", "enum": ["percentage", "fixed"] },
+        "discountValue": { "type": "number" },
+        "minPurchase": { "type": "number" },
+        "maxDiscount": { "type": "number" },
+        "expiryDate": { "type": "string", "format": "date-time" },
+        "usageLimit": { "type": "number" },
+        "usageCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "discountType", "discountValue", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -248,6 +281,10 @@
     "/free_accounts/{accountId}": {
       "schema": { "$ref": "#/entities/FreeAccount" },
       "description": "Free account offers."
+    },
+    "/coupons/{couponId}": {
+      "schema": { "$ref": "#/entities/Coupon" },
+      "description": "Discount coupons."
     }
   }
 }

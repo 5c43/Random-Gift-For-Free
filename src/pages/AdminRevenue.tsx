@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../AuthContext';
-import { ShieldAlert, DollarSign, ShoppingBag, Users, TrendingUp, Package, Clock, CheckCircle } from 'lucide-react';
+import { ShieldAlert, DollarSign, ShoppingBag, Users, TrendingUp, Package, Clock, CheckCircle, Calendar } from 'lucide-react';
 import { motion } from 'motion/react';
-import { format } from 'date-fns';
+import { format, isAfter, subDays, subWeeks, subMonths, startOfDay } from 'date-fns';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
 export function AdminRevenue() {
   const { user, userData } = useAuth();
+  const [timeFilter, setTimeFilter] = useState<'day' | 'week' | 'month' | 'all'>('all');
   const [stats, setStats] = useState({
     revenue: 0,
     orders: 0,
@@ -30,19 +31,35 @@ export function AdminRevenue() {
         
         const purchases = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
+        // Apply time filter
+        let filteredPurchases = purchases;
+        const now = new Date();
+        if (timeFilter === 'day') {
+          const dayStart = startOfDay(now);
+          filteredPurchases = purchases.filter((p: any) => p.createdAt && isAfter(p.createdAt.toDate(), dayStart));
+        } else if (timeFilter === 'week') {
+          const weekStart = subWeeks(now, 1);
+          filteredPurchases = purchases.filter((p: any) => p.createdAt && isAfter(p.createdAt.toDate(), weekStart));
+        } else if (timeFilter === 'month') {
+          const monthStart = subMonths(now, 1);
+          filteredPurchases = purchases.filter((p: any) => p.createdAt && isAfter(p.createdAt.toDate(), monthStart));
+        }
+
+        const paidPurchases = filteredPurchases.filter((p: any) => p.status === 'Pending Delivery' || p.status === 'completed');
+        
         // Calculate stats
-        const revenue = purchases.reduce((sum: number, p: any) => sum + (p.price || 0), 0);
-        const uniqueCustomers = new Set(purchases.map((p: any) => p.buyerId)).size;
+        const revenue = paidPurchases.reduce((sum: number, p: any) => sum + (p.price || 0), 0);
+        const uniqueCustomers = new Set(paidPurchases.map((p: any) => p.buyerId)).size;
         
         setStats({
           revenue,
-          orders: purchases.length,
+          orders: paidPurchases.length,
           customers: uniqueCustomers
         });
 
         // Top 5 Customers
         const customerMap = new Map();
-        purchases.forEach((p: any) => {
+        paidPurchases.forEach((p: any) => {
           const current = customerMap.get(p.buyerEmail) || { email: p.buyerEmail, orders: 0, spent: 0 };
           customerMap.set(p.buyerEmail, {
             ...current,
@@ -57,7 +74,7 @@ export function AdminRevenue() {
 
         // Top 5 Products
         const productMap = new Map();
-        purchases.forEach((p: any) => {
+        paidPurchases.forEach((p: any) => {
           const current = productMap.get(p.listingTitle) || { title: p.listingTitle, count: 0 };
           productMap.set(p.listingTitle, {
             ...current,
@@ -70,7 +87,7 @@ export function AdminRevenue() {
         setTopProducts(sortedProducts);
 
         // Latest Completed Orders
-        setLatestOrders(purchases.slice(0, 10));
+        setLatestOrders(paidPurchases.slice(0, 10));
 
       } catch (error) {
         handleFirestoreError(error, OperationType.GET, 'revenue_data');
@@ -80,7 +97,7 @@ export function AdminRevenue() {
     };
 
     fetchRevenueData();
-  }, [user, userData]);
+  }, [user, userData, timeFilter]);
 
   if (!user || (userData?.role !== 'admin' && user.uid !== 'ywskXjtxYJVD5xSU5wSNcpaWnXZ2')) {
     return (
@@ -96,9 +113,27 @@ export function AdminRevenue() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="flex items-center gap-4 mb-12">
-        <DollarSign className="h-12 w-12 text-red-500" />
-        <h1 className="text-4xl font-extrabold text-white">Revenue & Orders</h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+        <div className="flex items-center gap-4">
+          <DollarSign className="h-12 w-12 text-red-500" />
+          <h1 className="text-4xl font-extrabold text-white">Revenue & Orders</h1>
+        </div>
+
+        <div className="flex items-center bg-white/5 border border-white/10 rounded-xl p-1">
+          {(['day', 'week', 'month', 'all'] as const).map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setTimeFilter(filter)}
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                timeFilter === filter
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-500/20'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              {filter.charAt(0).toUpperCase() + filter.slice(1)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
